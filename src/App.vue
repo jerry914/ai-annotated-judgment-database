@@ -2,7 +2,7 @@
   <nav class="container md-6">
     <div class="text-center">
       <div v-if="$route.path!='/'" class="back-btn">
-        <router-link to="/"><strong>回搜尋頁</strong></router-link>
+        <router-link to="/">回搜尋頁</router-link>
       </div>
       <div class="col">
         <strong>裁判書資訊結構化（涵攝及見解）資料庫 － {{ page_name }}</strong>
@@ -58,6 +58,7 @@ nav a {
 }
 .back-btn a {
   text-decoration: none !important;
-  color: #000
+  color: #000;
+  font-weight: 400 !important;
 }
 </style>

@@ -60,8 +60,8 @@
 
     <div class="row mt-4">
       <div class="col-12 p-0 border rounded-3" style="overflow: hidden;">
-        <table class="table table-bordered rounded-3">
-          <thead class="text-center rounded-3">
+        <table class="table table-bordered custom-adjust-table">
+          <thead class="text-center">
             <tr>
               <th class="py-3">類型</th>
               <th class="py-3">搜尋與否(請勾選)</th>
