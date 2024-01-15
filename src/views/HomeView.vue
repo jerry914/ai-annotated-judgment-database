@@ -113,7 +113,6 @@ export default {
       poolKeyword: {
         name: 'pool', query: 'op', keyword: ''
       },
-      searchQuery: '',
       courtTypeOptions: [
         { name: '最高法院', value: 'a' },
         { name: '臺灣高等法院', value: 'b' },
@@ -149,29 +148,13 @@ export default {
     formatPart(value) {
       return String(value).padStart(2, '0')
     },
-    dateFormat(date) {
-      if (!date[0]) {
-        return
-      }
+    dateFormat() {
+      const fromYear = this.selectedDateRange.from.year;
+      const fromMonth = this.selectedDateRange.from.month;
+      const toYear = this.selectedDateRange.to.year;
+      const toMonth = this.selectedDateRange.to.month;
 
-      const start_day = this.formatPart(date[0].getDate())
-      const start_month = this.formatPart(date[0].getMonth() + 1)
-      const start_year = date[0].getFullYear()
-
-      let formattedDate = `起${start_year}-${start_month}-${start_day}`
-
-      if (date[1]) {
-        const end_day = this.formatPart(date[1].getDate())
-        const end_month = this.formatPart(date[1].getMonth() + 1)
-        const end_year = date[1].getFullYear()
-
-        formattedDate += `－迄${end_year}-${end_month}-${end_day}`
-        this.formData.refereeDate = `${start_year}${start_month}${start_day}-${end_year}${end_month}${end_day}`
-      } else {
-        this.formData.refereeDate = `${start_year}${start_month}${start_day}`
-      }
-
-      return formattedDate
+      return `${fromYear}/${fromMonth}-${toYear}/${toMonth}`;
   },
     submitSelection() {
       console.log('Selected Items:', this.selectedCourts)
@@ -212,6 +195,8 @@ export default {
       let queryParams = {}
 
       // Add courtType and refereeDate to queryParams
+      this.formData.courtType = this.selectedCourts.join(', ')
+      this.formData.refereeDate = this.dateFormat()
       queryParams.courtType = this.formData.courtType
       queryParams.refereeDate = this.formData.refereeDate
 

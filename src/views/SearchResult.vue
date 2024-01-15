@@ -4,17 +4,22 @@
     <div class="row">
       <div class="col-md-6">
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
-        <div class="d-flex flex-row">
-          <div>裁判資訊：</div>
-          <div class="px-2 pb-2" v-html="searchQuery.jud_info"></div>
+        <div>
+          <div class="pb-1 ">裁判資訊：</div>
+          <div class="d-flex flex-row">
+            <div class="px-2 pb-1">{{ formData.courtType.type }}: {{ formData.courtType.query }}</div>
+            <div class="px-2 pb-1">{{ formData.refereeDate.type }}: {{ formData.refereeDate.query }}</div>
+          </div>
         </div>
-        <div class="d-flex flex-row">
+        <div class="pb-1">
           <div>基本資訊：</div>
-          <div class="px-2 pb-2" v-html="searchQuery.basic_info"></div>
+          <div class="d-flex flex-row">
+            <div class="px-2 pb-1" v-for="info in formData.searchFields" :key="info.name">{{ info.type }}: {{ info.query }}</div>
+          </div> 
         </div>
-        <div class="d-flex flex-row">
-          <div>裁判內文：</div>
-          <div class="px-2 pb-2" v-html="searchQuery.content"></div>
+        <div class="pb-1">
+          <div>裁判內文：{{ poolOptions[poolKeyword.query].type }}</div>
+          <div class="px-2 pb-2">{{poolKeyword.keyword}}</div>
         </div>
       </div>
       <div class="col-md-4">
@@ -26,36 +31,8 @@
       </div>
     </div>
 
-    <!-- Second Row: Filters -->
-    <div class="row mt-1">
-      <div class="col-12">
-        <div class="fw-bolder my-1 py-1">顯示條件</div>
-        <div>{{ searchItems.join(' ') }}</div>
-      </div>
-    </div>
-
     <!-- Third Row: Data Tables -->
     <div class="row mt-3 mb-5">
-      <!-- 裁判內文 Table -->
-      <div v-if="mode!='default'" class="col-md-6">
-        <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-gray">涵攝/見解/心證</div>
-        <div class="rounded-3 border" style="overflow: hidden;">
-          <table class="table table-bordered custom-adjust-table">
-            <thead>
-              <tr class="text-center">
-                <th colspan="3">{{ mode }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in searchResults" :key="index">
-                <td>{{ item.full_jud }}</td>
-                <td>{{ item.sentence_kind }}</td>
-                <td>{{ item.sentence }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
       <!-- 裁判資訊 Table -->
       <div :class="mode=='default'?'col-md-5':'col-md-6'">
         <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-blue">裁判資訊</div>
@@ -111,15 +88,11 @@
           <table class="table table-bordered custom-adjust-table">
             <thead>
               <tr class="text-center">
-                <th>涵攝</th>
-                <th>見解</th>
-                <th>心證</th>
+                <th>{{ poolOptions[poolKeyword.query].type }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, index) in searchResults" :key="index">
-                <td>{{ item.full_jud }}</td>
-                <td>{{ item.sentence_kind }}</td>
                 <td>{{ item.sentence }}</td>
               </tr>
             </tbody>
@@ -138,16 +111,24 @@ export default {
   data() {
     return {
       mode: 'default', // default, sentence_kind
-      searchQuery: {
-        jud_info: '',
-        basic_info: '',
-        content: ''
-      },
       searchItems: [],
-      searchConfig: {
-        jud_info: [{range: '案件別', name:'case_kind'}, {range: '全文搜尋', name:'full_jud'}],
-        basic_info: [{range: '法官', name:'judger'}, {range: '辯護人(律師)', name:'defentdent'}, {range: '被告', name:'sued'}],
-        content: [{range: '涵攝', name:'sentence_type'}, {range: '見解', name:'sentence_type'}, {range: '心證', name:'sentence_type'}, {range: '', name:'sentence'}]
+      formData: {
+        courtType: {type: '法院別', name: 'court_type', query: ''},
+        refereeDate: {type: '裁判日期', name: 'referee_date', query: ''},
+        searchFields: {
+          case_kind: {type: '案件別', name:'case_kind', query: ''},
+          judger: {type: '法官（全名）', name:'judger', query: ''},
+          defentdent: {type: '辯護人（全名）', name:'defentdent', query: ''},
+          prosecutor: {type: '檢察官（全名）', name:'prosecutor', query: ''},
+        }
+      },
+      poolOptions: {
+        sub: {type: '涵攝', query: 'sub'},
+        op: {type: '見解', query: 'op'},
+        ft:  {type: '心證', query: 'ft'}
+      },
+      poolKeyword: {
+        name: 'pool', query: 'op', keyword: ''
       },
       searchResults: [],
       nextPageUrl: '',
@@ -157,30 +138,39 @@ export default {
   created() {
     // Call the method to fetch data when component is created
     this.fetchData()
-    this.initSearchQuery()
+    this.reverseUrlToFormData()
   },
   methods: {
-    initSearchQuery() {
-      const urlQueryParams = this.$route.query
-      for (const [category, params] of Object.entries(this.searchConfig)) {
-        this.searchQuery[category] = ''
-
-        // Check each parameter in the category
-        params.forEach(param => {
-          // If the range matches a URL query parameter, add it to the searchQuery under the appropriate category and name
-          if (urlQueryParams[param.name] !== undefined) {
-            if (param.name == 'sentence') {
-              this.mode = urlQueryParams['sentence_kind']
-              this.searchItems.push(urlQueryParams['sentence_kind'])
-              this.searchQuery[category] += (urlQueryParams['sentence_kind'] + ':' + urlQueryParams[param.name] + '<br>')
-            }
-            else {
-              this.searchItems.push(param.range)
-              this.searchQuery[category] += (param.range + ':' + urlQueryParams[param.name]) + '<br>'
-            }
-          }
-        })
+    // Function to update a specific field in formData
+    updateFormDataField(fieldName, queryValue) {
+      if (this.formData[fieldName]) {
+        this.formData[fieldName].query = queryValue;
+      } else if (this.formData.searchFields[fieldName]) {
+        this.formData.searchFields[fieldName].query = queryValue;
       }
+    },
+    // Main function to reverse URL to formData and poolKeyword
+    reverseUrlToFormData() {
+      const urlParams = new URLSearchParams(window.location.search);
+
+      // Define a mapping of URL parameters to formData fields
+      const paramToFieldMap = {
+        courtType: 'courtType',
+        refereeDate: 'refereeDate',
+        case_kind: 'case_kind',
+        judger: 'judger',
+        defentdent: 'defentdent',
+        prosecutor: 'prosecutor'
+      };
+
+      // Iterate over each URL parameter and update formData
+      for (const [param, field] of Object.entries(paramToFieldMap)) {
+        this.updateFormDataField(field, urlParams.get(param) || '');
+      }
+
+      // Update poolKeyword separately
+      this.poolKeyword.query = urlParams.get('pool') || '';
+      this.poolKeyword.keyword = urlParams.get('keyword') || '';
     },
     fetchData() {
       // Replace with the actual API call
@@ -189,6 +179,9 @@ export default {
       this.searchResults = apiResponse.data
       this.nextPageUrl = apiResponse.nextPageUrl
       this.resultCount = apiResponse.summary
+
+      // 網址格式  ex: keywords=人格&&心理, pool=(op=見解, sub=涵攝, ft=心證)  
+      // http://127.0.0.1:3000/search/<keywords>?pool=op
     }
   }
 };
