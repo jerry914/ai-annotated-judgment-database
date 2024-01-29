@@ -6,8 +6,7 @@
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
         <div>
           <div class="d-flex flex-wrap">
-            <div class="px-2 pb-1">{{ formData.court_type.type }}: {{ formData.court_type.query }}</div>
-            <div class="px-2 pb-1">{{ formData.refereeDate.type }}: {{ formData.refereeDate.query }}</div>
+            <div class="px-2 pb-1" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
           </div>
         </div>
       </div>
@@ -19,53 +18,42 @@
         <button type="button" class="btn btn-light-green">下載搜尋結果</button>
       </div> -->
     </div>
-
     <!-- Third Row: Data Tables -->
-    <div class="row mt-3 mb-5">
+    <div class="row mt-3 mb-3">
       <!-- 裁判資訊 Table -->
-      <div :class="mode=='default'?'col-md-5':'col-md-6'">
-        <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-blue">裁判資訊</div>
-        <div class="rounded-3 border" style="overflow: hidden;">
+      <div class="col-md-12">
+        <div class="rounded-3 border">
           <table class="table table-bordered custom-adjust-table">
             <thead>
               <tr class="text-center">
-                <th>序號</th>
-                <th>裁判字號(URL)</th>
-                <th>案件別</th>
-                <th>法院別</th>
+                <th class="custom-blue" v-for="field in searchFields" :key="field.name">{{ field.type }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, index) in searchResults" :key="index">
-                <td class="text-center">{{ item.num }}</td>
-                <td><a :href="item.jid_url">{{ item.jid }}</a></td>
-                <td>{{ item.case_kind }}</td>
-                <td>{{ item.court }}</td>
+                <td v-for="field in searchFields" :key="field.name">
+                  <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
+                  <p v-else-if="item[field.name].length > maxTextLength" class="mytooltip">
+                    <span v-html="addHighlighter(field.name, item[field.name].substr(0,100))"></span>...more
+                    <span class="tooltiptext" v-html="addHighlighter(field.name, item[field.name])"></span>
+                  </p>
+                  <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-      <!-- 裁判內文 Table -->
-      <!-- <div v-if="mode=='default'" class="col-md-4">
-        <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-gray">裁判內文</div>
-        <div class="rounded-3 border" style="overflow: hidden;">
-          <table class="table table-bordered custom-adjust-table">
-            <thead>
-              <tr class="text-center">
-                <th>{{ poolOptions[poolKeyword.query].type }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in searchResults" :key="index">
-                <td>{{ item.sentence }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div> -->
     </div>
+
+    <ul class="pagination justify-content-left">
+      <li class="page-item" :class="pageDetial.previous_page_url=='null'?'disabled':''">
+        <a class="page-link" :href="pageDetial.previous_page_url" tabindex="-1">Previous</a>
+      </li>
+      <li class="page-item" :class="pageDetial.next_page_url=='null'?'disabled':''">
+        <a class="page-link" :href="pageDetial.next_page_url">Next</a>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -77,66 +65,71 @@ export default {
   data() {
     return {
       mode: 'default', // default, sentence_kind
-      searchItems: [],
-      formData: {
+      params: {},
+      searchFields: {
         court_type: {type: '法院別', name: 'court_type', query: ''},
-        refereeDate: {type: '裁判日期', name: 'referee_date', query: ''},
-        searchFields: {
-          case_kind: {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
-          basic_info: {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
-          syllabus: {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
-          opinion: {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
-          fee: {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
-          sub: {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
-          jud_full: {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
-        },
-      },
-      poolOptions: {
-        sub: {type: '涵攝', query: 'sub'},
-        op: {type: '見解', query: 'op'},
-        ft:  {type: '心證', query: 'ft'}
-      },
-      poolKeyword: {
-        name: 'pool', query: 'op', keyword: ''
+        jud_date: {type: '裁判日期', name: 'jud_date', query: ''},
+        // case_kind: {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
+        basic_info: {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
+        syllabus: {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
+        opinion: {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
+        fee: {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
+        sub: {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
+        jud_full: {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
       },
       searchResults: [],
-      nextPageUrl: '',
-      resultCount: []
+      resultCount: [],
+      pageDetial: {
+        "page": 1,
+        "size": 2,
+        "next_page_url": "null",
+        "previous_page_url": "null",
+        "total_pages": 8,
+        "total": 15
+      },
+      conditionInfo: [
+        [
+          "jud_date",
+          "20220101-20220115"
+        ],
+        [
+          "opinion",
+          "主觀 殺人"
+        ]
+      ],
+      maxTextLength: 100
     };
   },
   created() {
     // Call the method to fetch data when component is created
     this.fetchData()
-    this.reverseUrlToFormData()
   },
   methods: {
-    // Function to update a specific field in formData
-    updateFormDataField(fieldName, queryValue) {
-      if (this.formData[fieldName]) {
-        this.formData[fieldName].query = queryValue;
-      } else if (this.formData.searchFields[fieldName]) {
-        this.formData.searchFields[fieldName].query = queryValue;
-      }
+    getConditionInfo(info) {
+      return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
     },
-    // Main function to reverse URL to formData and poolKeyword
-    reverseUrlToFormData() {
-      const urlParams = new URLSearchParams(window.location.search);
-      this.updateFormDataField('court_type', urlParams.get('court_type') || '')
-      this.updateFormDataField('refereeDate', urlParams.get('refereeDate') || '')
+    addHighlighter(fieldName, rawData) {
+      let keywords = null
+      this.conditionInfo.forEach((condition) => {
+        if (condition[0] == fieldName) {
+          keywords = condition[1]
+          return
+        }
+      })
 
-      // Define a mapping of URL parameters to formData fields
-      for (const [param, field] of Object.entries(this.formData.searchFields)) {
-        this.updateFormDataField(field.name, urlParams.get(param) || '');
+      let result = rawData
+      if(keywords) {
+        keywords.split(" ").forEach((keyword) => {
+        result = result.replace(keyword,`<span class="highlighter">${keyword}</span>`)
+      })
       }
-
-      // console.log(this.formData)
-
+      return result
     },
     fetchData() {
       // Replace with the actual API call
       const urlParams = new URLSearchParams(window.location.search)
 
-      let params = {
+      this.params = {
         'search_method': "keyword",
         'page': '1',
         'size': '2',
@@ -149,10 +142,11 @@ export default {
         'sub': urlParams.get('sub') || '', 
         'jud_full': urlParams.get('jud_full') || ''
       }
-      console.log(params)
+      console.log(this.params)
       const apiResponse = testSearchResults
       this.searchResults = apiResponse.data
-      this.nextPageUrl = apiResponse.meta.nextPageUrl
+      this.conditionInfo = apiResponse.condition_info.available
+      this.pageDetial = apiResponse.meta
       this.resultCount = apiResponse.summary
     }
   }
@@ -172,7 +166,7 @@ export default {
   border: #ACACAC 1px solid !important;
 }
 .custom-blue {
-  background-color: #BDE3FF;
+  background-color: #BDE3FF !important;
   border: #97B6CC 1px solid !important;
 }
 td {
@@ -183,5 +177,34 @@ td {
 .custom-adjust-table {
   width: calc( 100% + 2px ) !important;
   transform: translateX(-1px);
+}
+
+.mytooltip {
+  position: relative;
+  cursor: pointer;
+}
+
+.mytooltip .tooltiptext {
+  visibility: hidden;
+  width: 40vw;
+  background-color: black;
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 10px;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1 !important;
+}
+
+.mytooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.tooltiptext .highlighter {
+  background-color: rgb(170, 116, 8);
+}
+.highlighter {
+  background-color: yellow;
 }
 </style>
