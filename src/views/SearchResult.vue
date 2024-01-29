@@ -2,33 +2,22 @@
   <div class="container">
     <!-- First Row: Search Query and Statistical Results -->
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-9">
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
         <div>
-          <div class="pb-1 ">裁判資訊：</div>
-          <div class="d-flex flex-row">
-            <div class="px-2 pb-1">{{ formData.courtType.type }}: {{ formData.courtType.query }}</div>
+          <div class="d-flex flex-wrap">
+            <div class="px-2 pb-1">{{ formData.court_type.type }}: {{ formData.court_type.query }}</div>
             <div class="px-2 pb-1">{{ formData.refereeDate.type }}: {{ formData.refereeDate.query }}</div>
           </div>
         </div>
-        <div class="pb-1">
-          <div>基本資訊：</div>
-          <div class="d-flex flex-row">
-            <div class="px-2 pb-1" v-for="info in formData.searchFields" :key="info.name">{{ info.type }}: {{ info.query }}</div>
-          </div> 
-        </div>
-        <div class="pb-1">
-          <div>裁判內文：{{ poolOptions[poolKeyword.query].type }}</div>
-          <div class="px-2 pb-2">{{poolKeyword.keyword}}</div>
-        </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="fw-bolder my-1 py-1">查詢結果</div>
         <div v-for="count in resultCount" :key="count.name">共計 <strong class="text-decoration-underline">{{ count.count }}</strong> {{ count.unit }}{{ count.name }}</div>
       </div>
-      <div class="col-md-2">
+      <!-- <div class="col-md-2">
         <button type="button" class="btn btn-light-green">下載搜尋結果</button>
-      </div>
+      </div> -->
     </div>
 
     <!-- Third Row: Data Tables -->
@@ -58,31 +47,8 @@
         </div>
       </div>
 
-      <!-- 基本資訊 Table -->
-      <div v-if="mode=='default'" class="col-md-3">
-        <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-gray">基本資訊</div>
-        <div class="rounded-3 border" style="overflow: hidden;">
-          <table class="table table-bordered custom-adjust-table">
-            <thead>
-              <tr class="text-center">
-                <th>法官</th>
-                <th>被告</th>
-                <th>上訴人</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in searchResults" :key="index">
-                <td>{{ item.judger }}</td>
-                <td>{{ item.defendant }}</td>
-                <td>{{ item.appeal }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- 裁判內文 Table -->
-      <div v-if="mode=='default'" class="col-md-4">
+      <!-- <div v-if="mode=='default'" class="col-md-4">
         <div class="fw-bolder mt-1 py-2 rounded-3 text-center custom-gray">裁判內文</div>
         <div class="rounded-3 border" style="overflow: hidden;">
           <table class="table table-bordered custom-adjust-table">
@@ -98,14 +64,14 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
 
 <script>
 // import axios from 'axios'
-import testSearchResults from '../../data/test_searchResults.json'
+import testSearchResults from '../../data/api_search.json'
 
 export default {
   data() {
@@ -113,14 +79,17 @@ export default {
       mode: 'default', // default, sentence_kind
       searchItems: [],
       formData: {
-        courtType: {type: '法院別', name: 'court_type', query: ''},
+        court_type: {type: '法院別', name: 'court_type', query: ''},
         refereeDate: {type: '裁判日期', name: 'referee_date', query: ''},
         searchFields: {
-          case_kind: {type: '案件別', name:'case_kind', query: ''},
-          judger: {type: '法官（全名）', name:'judger', query: ''},
-          defentdent: {type: '辯護人（全名）', name:'defentdent', query: ''},
-          prosecutor: {type: '檢察官（全名）', name:'prosecutor', query: ''},
-        }
+          case_kind: {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
+          basic_info: {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
+          syllabus: {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
+          opinion: {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
+          fee: {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
+          sub: {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
+          jud_full: {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
+        },
       },
       poolOptions: {
         sub: {type: '涵攝', query: 'sub'},
@@ -152,36 +121,39 @@ export default {
     // Main function to reverse URL to formData and poolKeyword
     reverseUrlToFormData() {
       const urlParams = new URLSearchParams(window.location.search);
+      this.updateFormDataField('court_type', urlParams.get('court_type') || '')
+      this.updateFormDataField('refereeDate', urlParams.get('refereeDate') || '')
 
       // Define a mapping of URL parameters to formData fields
-      const paramToFieldMap = {
-        courtType: 'courtType',
-        refereeDate: 'refereeDate',
-        case_kind: 'case_kind',
-        judger: 'judger',
-        defentdent: 'defentdent',
-        prosecutor: 'prosecutor'
-      };
-
-      // Iterate over each URL parameter and update formData
-      for (const [param, field] of Object.entries(paramToFieldMap)) {
-        this.updateFormDataField(field, urlParams.get(param) || '');
+      for (const [param, field] of Object.entries(this.formData.searchFields)) {
+        this.updateFormDataField(field.name, urlParams.get(param) || '');
       }
 
-      // Update poolKeyword separately
-      this.poolKeyword.query = urlParams.get('pool') || '';
-      this.poolKeyword.keyword = urlParams.get('keyword') || '';
+      // console.log(this.formData)
+
     },
     fetchData() {
       // Replace with the actual API call
-      // This is a placeholder for fetching data from an API
+      const urlParams = new URLSearchParams(window.location.search)
+
+      let params = {
+        'search_method': "keyword",
+        'page': '1',
+        'size': '2',
+        'court_type': urlParams.get('court_type') || '', 
+        'jud_date': urlParams.get('jud_date') || '', 
+        'basic_info': urlParams.get('basic_info') || '', 
+        'syllabus': urlParams.get('syllabus') || '', 
+        'opinion': urlParams.get('opinion') || '', 
+        'fee': urlParams.get('fee') || '', 
+        'sub': urlParams.get('sub') || '', 
+        'jud_full': urlParams.get('jud_full') || ''
+      }
+      console.log(params)
       const apiResponse = testSearchResults
       this.searchResults = apiResponse.data
-      this.nextPageUrl = apiResponse.nextPageUrl
+      this.nextPageUrl = apiResponse.meta.nextPageUrl
       this.resultCount = apiResponse.summary
-
-      // 網址格式  ex: keywords=人格&&心理, pool=(op=見解, sub=涵攝, ft=心證)  
-      // http://127.0.0.1:3000/search/<keywords>?pool=op
     }
   }
 };

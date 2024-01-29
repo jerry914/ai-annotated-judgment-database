@@ -2,55 +2,57 @@
   <div class="container mt-4">
     <div class="row">
       <!-- Left column for form inputs -->
-      <div class="col-md-12">
-        <div class="fw-bolder my-1 py-1">進階搜尋條件</div>
+      <div class="col-md-3">
         <form @submit.prevent="onSubmit">
           <!-- Case type input -->
           <!-- Court type select -->
           <div class="form-group">
-            <div>法院別 
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" v-model="isSelectedAllCourts" @change="isSelectedAllCourts?selectedCourtsAll():cancelCourtsAll()">
-                <label class="form-check-label">全選</label>
-              </div>
-              <div class="form-check form-check-inline" v-for="(item, index) in courtTypeOptions" :key="index">
-                <input class="form-check-input" type="checkbox" :value="item.name" v-model="selectedCourts" @change="changeSelected">
-                <label class="form-check-label">{{ item.name }}</label>
+            <div><strong>法院別</strong>
+              <div style="height: 60vh;overflow:scroll;">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" v-model="isSelectedAllCourts" @change="isSelectedAllCourts?selectedCourtsAll():cancelCourtsAll()">
+                  <label class="form-check-label">全選</label>
+                </div>
+                <div class="form-check form-check-inline" v-for="(item, index) in courtTypeOptions" :key="index">
+                  <input class="form-check-input" type="checkbox" :value="item.name" v-model="selectedCourts" @change="changeSelected">
+                  <label class="form-check-label">{{ item.name }}</label>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Referee date input -->
           <div class="form-group">
-            <label for="referee-date">裁判日期</label>
-            <br>
-            <span class="p-2">起</span>
-            <span>民國</span>
-            <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.year">
-              <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
-            </select>
-            <span>年</span>
-            <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.month">
-              <option v-for="month in 12" :value="month" :key="month">{{month }}</option>
-            </select>
-            <span>月</span>
-            <span class="p-2">迄</span>
-            <span>民國</span>
-            <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.year">
-              <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
-            </select>
-            <span>年</span>
-            <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.month">
-              <option v-for="month in 12" :value="month" :key="month">{{month }}</option>
-            </select>
-            <span>月</span>
+            <div class="mt-3"><strong>裁判日期</strong></div>
+            <div>
+              <span class="p-2">起</span>
+              <span>民國</span>
+              <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.year">
+                <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
+              </select>
+              <span>年</span>
+              <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.month">
+                <option v-for="month in 12" :value="month" :key="month">{{month }}</option>
+              </select>
+              <span>月</span>
+            </div>
+            <div>
+              <span class="p-2">迄</span>
+              <span>民國</span>
+              <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.year">
+                <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
+              </select>
+              <span>年</span>
+              <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.month">
+                <option v-for="month in 12" :value="month" :key="month">{{month }}</option>
+              </select>
+              <span>月</span>
+            </div>
           </div>
         </form>
       </div>
-    </div>
-
-    <div class="row mt-4">
-      <div class="col-12 p-0 border rounded-3" style="overflow: hidden;">
+      <div class="col-md-9">
+        <div class="p-0 border rounded-3" style="overflow: hidden;">
         <table class="table table-bordered custom-adjust-table">
           <thead class="text-center">
             <tr>
@@ -63,7 +65,7 @@
               <td class="text-center" style="line-height: 35px;">{{ field.type }}</td>
               <td class="custom-light-purple"><input type="text" class="form-control custom-light-purple" v-model="field.query" :placeholder="field.example"></td>
             </tr>
-            <tr>
+            <!-- <tr>
               <td>
                 <div class="form-check mx-auto" style="width: fit-content;" v-for="option in poolOptions" :key="option.query">
                   <input class="form-check-input" type="radio" name="flexRadio" :id="option.query" v-model="poolKeyword.query" :value="option.query">
@@ -73,16 +75,18 @@
                 </div>
               </td>
               <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 150px" v-model="poolKeyword.keyword" :placeholder="poolOptions[poolKeyword.query].example" /></td>
-            </tr>
+            </tr> -->
           </tbody>
         </table>
       </div>
+        <div class="d-flex flex-row-reverse my-5">
+          <button class="btn btn-secondary d-inline-flex custom-purlpe" @click="advanceSearch">進階搜尋條件送出</button>
+        </div>
+      </div>
     </div>
+
     <div v-if="showErrorAlert" class="alert alert-danger mt-2" role="alert">
       無法同時選擇一項以上的涵攝，見解，或心證，請修改後送出。
-    </div>
-    <div class="d-flex flex-row-reverse my-4">
-      <button class="btn btn-secondary d-inline-flex custom-purlpe" @click="advanceSearch">進階搜尋條件送出</button>
     </div>
   </div>
 </template>
@@ -96,13 +100,16 @@ export default {
   data() {
     return {
       formData: {
-        courtType: '',
+        court_type: '',
         refereeDate: '',
         searchFields: [
           {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
-          {type: '法官（全名）', name:'judger', example: '王敏慧', query: ''},
-          {type: '辯護人（全名）', name:'defentdent', example: '李志聖', query: ''},
-          {type: '檢察官（全名）', name:'prosecutor', example: '蔡孟男', query: ''},
+          {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
+          {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
+          {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
+          {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
+          {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
+          {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
         ],
       },
       poolOptions: {
@@ -114,13 +121,28 @@ export default {
         name: 'pool', query: 'op', keyword: ''
       },
       courtTypeOptions: [
-        { name: '最高法院', value: 'a' },
-        { name: '臺灣高等法院', value: 'b' },
-        { name: '臺灣高等法院臺中分院', value: 'c' },
-        { name: '臺灣高等法院臺南分院', value: 'd' },
-        { name: '臺灣高等法院高雄分院', value: 'e' },
-        { name: '臺灣高等法院花蓮分院', value: 'f' },
-        { name: '福建高等法院金門分院', value: 'g' }
+        { name: '臺灣臺北地方法院', value: 'a' },
+        { name: '臺灣士林地方法院', value: 'b' },
+        { name: '臺灣新北地方法院', value: 'c' },
+        { name: '臺灣宜蘭地方法院', value: 'd' },
+        { name: '臺灣基隆地方法院', value: 'e' },
+        { name: '臺灣桃園地方法院', value: 'f' },
+        { name: '臺灣新竹地方法院', value: 'g' },
+        { name: '臺灣苗栗地方法院', value: 'h' },
+        { name: '臺灣臺中地方法院', value: 'i' },
+        { name: '臺灣彰化地方法院', value: 'j' },
+        { name: '臺灣南投地方法院', value: 'k' },
+        { name: '臺灣雲林地方法院', value: 'l' },
+        { name: '臺灣嘉義地方法院', value: 'm' },
+        { name: '臺灣臺南地方法院', value: 'n' },
+        { name: '臺灣高雄地方法院', value: 'o' },
+        { name: '臺灣橋頭地方法院', value: 'p' },
+        { name: '臺灣花蓮地方法院', value: 'q' },
+        { name: '臺灣臺東地方法院', value: 'r' },
+        { name: '臺灣屏東地方法院', value: 's' },
+        { name: '臺灣澎湖地方法院', value: 't' },
+        { name: '福建金門地方法院', value: 'v' },
+        { name: '福建連江地方法院', value: 'w' }
       ],
       showModal: false,
       isSelectedAllCourts: true,
@@ -148,17 +170,25 @@ export default {
     formatPart(value) {
       return String(value).padStart(2, '0')
     },
+    getLastDayOfMonth(year, month) {
+      let lastDayCurrentMonth = new Date(year, month + 1, 0)
+      return lastDayCurrentMonth.getDate()
+    },
     dateFormat() {
-      const fromYear = this.selectedDateRange.from.year;
-      const fromMonth = this.selectedDateRange.from.month;
-      const toYear = this.selectedDateRange.to.year;
-      const toMonth = this.selectedDateRange.to.month;
+      const fromYear = 1911 + parseInt(this.selectedDateRange.from.year);
+      const fromMonth = String(this.selectedDateRange.from.month);
+      const toYear = 1911 + parseInt(this.selectedDateRange.to.year);
+      const toMonth = String(this.selectedDateRange.to.month);
+      let lastDate = this.getLastDayOfMonth(
+        toYear,
+        toMonth-1
+      )
 
-      return `${fromYear}/${fromMonth}-${toYear}/${toMonth}`;
+      return `${fromYear}${fromMonth.padStart(2, "0")}01-${toYear}${toMonth.padStart(2, "0")}${lastDate}`;
   },
     submitSelection() {
       console.log('Selected Items:', this.selectedCourts)
-      this.formData.courtType = this.selectedCourts.join(', ')
+      this.formData.court_type = this.selectedCourts.join(', ')
       this.showModal = false
     },
     changeSelected() {
@@ -176,7 +206,7 @@ export default {
       this.selectedCourts = []
     },
     initializeForm(){
-      this.formData.courtType = this.courtTypeOptions.map(option => option.name).join(', ')
+      this.formData.court_type = this.courtTypeOptions.map(option => option.name).join(', ')
       this.selectedCourtsAll()
     },
     onSubmit() {
@@ -195,18 +225,15 @@ export default {
       let queryParams = {}
 
       // Add courtType and refereeDate to queryParams
-      this.formData.courtType = this.selectedCourts.join(', ')
+      this.formData.court_type = this.selectedCourts.join(', ')
       this.formData.refereeDate = this.dateFormat()
-      queryParams.courtType = this.formData.courtType
-      queryParams.refereeDate = this.formData.refereeDate
+      queryParams.court_type = this.formData.court_type
+      queryParams.jud_date = this.formData.refereeDate
 
       // Loop through searchFields and add to queryParams
       this.formData.searchFields.forEach((field) => {
         queryParams[field.name] = field.query
       });
-
-      queryParams['pool'] = this.poolKeyword.query
-      queryParams['keyword'] = this.poolKeyword.keyword
 
       // Use Vue Router to navigate with constructed query parameters
       this.$router.push({ path: '/search-result', query: queryParams })
