@@ -10,7 +10,7 @@
     </div>
   </nav>
   <router-view/>
-  <div class="position-relative bottom-0 start-50 translate-middle text-center" style="z-index:-1;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</div>
+  <div class="mt-2 text-center" style="z-index:-1;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</div>
 </template>
 
 <script>

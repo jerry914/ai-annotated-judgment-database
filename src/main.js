@@ -7,4 +7,7 @@ import "bootstrap"
 import VueDatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 
-createApp(App).use(store).use(router).component('VueDatePicker', VueDatePicker).mount('#app')
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+createApp(App).use(store).use(router).use(ElementPlus).component('VueDatePicker', VueDatePicker).mount('#app')

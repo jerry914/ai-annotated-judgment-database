@@ -1,23 +1,39 @@
 <template>
-  <div class="container">
+  <div class="container" v-loading="loading">
     <!-- First Row: Search Query and Statistical Results -->
     <div class="row">
       <div class="col-md-9">
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
         <div>
           <div class="d-flex flex-wrap">
+            <!-- <div class="px-2 pb-1" v-for="info in conditionInfo" :key="info">{{ info }}</div> -->
             <div class="px-2 pb-1" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="fw-bolder my-1 py-1">查詢結果</div>
-        <div v-for="count in resultCount" :key="count.name">共計 <strong class="text-decoration-underline">{{ count.count }}</strong> {{ count.unit }}{{ count.name }}</div>
+        <div v-for="count in resultCount" :key="count.name">
+          <template v-if="count.count!=0">
+            共計 <strong class="text-decoration-underline">{{ count.count }}</strong> {{ count.unit }}{{ count.name }}
+          </template>
+        </div>
       </div>
       <!-- <div class="col-md-2">
         <button type="button" class="btn btn-light-green">下載搜尋結果</button>
       </div> -->
     </div>
+
+    <el-pagination
+      v-model="pageDetial.page"
+      :page-size="pageDetial.size"
+      :page-sizes="[10, 50, 100, 200]"
+      :total="pageDetial.total"
+      background
+      layout="total, sizes, prev, pager, next"
+      @size-change="handlePageSize"
+      @current-change="handlePageChange"
+    />
     <!-- Third Row: Data Tables -->
     <div class="row mt-3 mb-3">
       <!-- 裁判資訊 Table -->
@@ -26,62 +42,84 @@
           <table class="table table-bordered custom-adjust-table">
             <thead>
               <tr class="text-center">
-                <th class="custom-blue" v-for="field in searchFields" :key="field.name">{{ field.type }}</th>
+                <template v-for="field in searchFields" :key="field.name">
+                  <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
+                </template>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, index) in searchResults" :key="index">
-                <td v-for="field in searchFields" :key="field.name">
-                  <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
-                  <p v-else-if="item[field.name].length > maxTextLength" class="mytooltip">
-                    <span v-html="addHighlighter(field.name, item[field.name].substr(0,100))"></span>...more
-                    <span class="tooltiptext" v-html="addHighlighter(field.name, item[field.name])"></span>
-                  </p>
-                  <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
+                <template v-for="field in searchFields" :key="field.name" >
+                  <td v-if="checkQueryEnable(field.name)" :style="field.name=='basic_info'?'min-width: 250px;':''">
+                    <template v-if="field.name == 'case_num'">
+                      <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
+                    </template>
+                    <template v-else>
+                      <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
+                      <p v-else-if="item[field.name].length > maxTextLength" class="mytooltip" @click="openDialog(addHighlighter(field.name, item[field.name]))">
+                        <span v-html="addHighlighter(field.name, item[field.name].substr(0,100))"></span>...more
+                        <span class="tooltiptext">點擊閱讀全文</span>
+                      </p>
+                      <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
+                    </template>
                 </td>
+                </template>
               </tr>
+              <tr v-if="searchResults.length == 0">
+                <td class="no-found-cell" colspan="8">查無資料
+                </td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-
-    <ul class="pagination justify-content-left">
-      <li class="page-item" :class="pageDetial.previous_page_url=='null'?'disabled':''">
-        <a class="page-link" :href="pageDetial.previous_page_url" tabindex="-1">Previous</a>
-      </li>
-      <li class="page-item" :class="pageDetial.next_page_url=='null'?'disabled':''">
-        <a class="page-link" :href="pageDetial.next_page_url">Next</a>
-      </li>
-    </ul>
+    <el-dialog
+      v-model="dialogVisible"
+      width="60%"
+      style="max-height: 80vh; overflow: scroll;"
+      :before-close="handleClose"
+    >
+      <span v-html="dialogText"></span>
+    </el-dialog>
+    <el-pagination
+      v-model="pageDetial.page"
+      :page-size="pageDetial.size"
+      :page-sizes="[10, 50, 100, 200]"
+      :total="pageDetial.total"
+      background
+      layout="total, sizes, prev, pager, next"
+      @size-change="handlePageChange"
+      @current-change="handlePageChange"
+    />
   </div>
 </template>
 
 <script>
-// import axios from 'axios'
-import testSearchResults from '../../data/api_search.json'
+import axios from 'axios'
+// import testSearchResults from '../../data/api_search.json'
 
 export default {
   data() {
     return {
+      loading: true,
       mode: 'default', // default, sentence_kind
       params: {},
       searchFields: {
-        court_type: {type: '法院別', name: 'court_type', query: ''},
-        jud_date: {type: '裁判日期', name: 'jud_date', query: ''},
-        // case_kind: {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
-        basic_info: {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
-        syllabus: {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
-        opinion: {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
-        fee: {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
-        sub: {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
-        jud_full: {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
+        court_type: {type: '法院', name: 'court_type'},
+        case_num: {type: '案號', name: 'case_num'},
+        jud_date: {type: '日期', name: 'jud_date'},
+        case_type: {type: '案件別', name:'case_type'},
+        basic_info: {type: '當事人等基本資料', name:'basic_info'},
+        opinion: {type: '見解', name:'opinion'},
+        fee: {type: '心證', name:'fee'},
+        sub: {type: '涵攝', name:'sub'},
+        jud_full: {type: '全文關鍵字', name:'jud_full'},
       },
       searchResults: [],
       resultCount: [],
       pageDetial: {
         "page": 1,
-        "size": 2,
+        "size": 10,
         "next_page_url": "null",
         "previous_page_url": "null",
         "total_pages": 8,
@@ -97,16 +135,51 @@ export default {
           "主觀 殺人"
         ]
       ],
-      maxTextLength: 100
+      maxTextLength: 100,
+      dialogVisible: false,
+      dialogText: ''
     };
   },
   created() {
     // Call the method to fetch data when component is created
+    this.initParams()
     this.fetchData()
   },
   methods: {
+    openDialog(content) {
+      this.dialogVisible = true
+      this.dialogText = content
+    },
+    handleClose() {
+      this.dialogVisible = false
+    },
+    checkQueryEnable(name) {
+      if (name == 'court_type') {
+        return false
+      }
+      if (name == 'opinion' ||  name === 'fee' || name === 'sub' || name == 'jud_full') {
+        if (this.params[name]) {
+          return true
+        }
+      }
+      else {
+        return true
+      }
+      return false
+    },
+    handlePageSize(size) {
+      console.log(size)
+      this.pageDetial.size = size
+      this.fetchData()
+    },
+    handlePageChange(page) {
+      this.pageDetial.page = page
+      this.fetchData()
+    },
     getConditionInfo(info) {
-      return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
+      if (this.searchFields[info[0]]) {
+        return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
+      }
     },
     addHighlighter(fieldName, rawData) {
       let keywords = null
@@ -123,16 +196,26 @@ export default {
         result = result.replace(keyword,`<span class="highlighter">${keyword}</span>`)
       })
       }
+      result = result.replace(/\n+/g, '<br>')
+      // Remove <br> at the end of the string
+      result = result.replace(/<br>$/, '')
       return result
     },
-    fetchData() {
-      // Replace with the actual API call
+    removeEmptyStringValues(obj) {
+        Object.keys(obj).forEach(key => {
+            if (obj[key] === '') {
+                delete obj[key];
+            }
+        });
+        return obj;
+    },
+    initParams() {
       const urlParams = new URLSearchParams(window.location.search)
 
       this.params = {
         'search_method': "keyword",
-        'page': '1',
-        'size': '2',
+        'page': 1,
+        'size': this.pageDetial.size,
         'court_type': urlParams.get('court_type') || '', 
         'jud_date': urlParams.get('jud_date') || '', 
         'basic_info': urlParams.get('basic_info') || '', 
@@ -142,12 +225,32 @@ export default {
         'sub': urlParams.get('sub') || '', 
         'jud_full': urlParams.get('jud_full') || ''
       }
-      console.log(this.params)
-      const apiResponse = testSearchResults
-      this.searchResults = apiResponse.data
-      this.conditionInfo = apiResponse.condition_info.available
-      this.pageDetial = apiResponse.meta
-      this.resultCount = apiResponse.summary
+      this.params = this.removeEmptyStringValues(this.params)
+      // console.log(this.params)
+    },
+    async fetchData() {
+      this.loading = true
+      this.params.page = this.pageDetial.page
+      this.params.size = this.pageDetial.size
+      try {
+        const response = await axios.get('https://105f-140-114-83-23.ngrok-free.app/api/search', {
+          headers: {
+            "ngrok-skip-browser-warning": "69420"
+          },
+          params: this.params
+        });
+        // const apiResponse = testSearchResults
+        const apiResponse = response.data
+        // console.log(apiResponse)
+        this.searchResults = apiResponse.data
+        this.conditionInfo = apiResponse.condition_info.available
+        this.pageDetial = apiResponse.meta
+        this.resultCount = apiResponse.summary
+        this.loading = false
+      } catch (error) {
+        console.error('There was an error!', error)
+        this.loading = false
+      }
     }
   }
 };
@@ -186,10 +289,10 @@ td {
 
 .mytooltip .tooltiptext {
   visibility: hidden;
-  width: 40vw;
+  width: 120px;
   background-color: black;
   color: #fff;
-  text-align: left;
+  text-align: center;
   border-radius: 6px;
   padding: 5px 10px;
 
@@ -206,5 +309,9 @@ td {
 }
 .highlighter {
   background-color: yellow;
+}
+.no-found-cell {
+  background-color: #fff;
+  text-align: center;
 }
 </style>

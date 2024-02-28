@@ -7,17 +7,11 @@
           <!-- Case type input -->
           <!-- Court type select -->
           <div class="form-group">
-            <div><strong>法院別</strong>
-              <div style="height: 60vh;overflow:scroll;">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" v-model="isSelectedAllCourts" @change="isSelectedAllCourts?selectedCourtsAll():cancelCourtsAll()">
-                  <label class="form-check-label">全選</label>
-                </div>
-                <div class="form-check form-check-inline" v-for="(item, index) in courtTypeOptions" :key="index">
-                  <input class="form-check-input" type="checkbox" :value="item.name" v-model="selectedCourts" @change="changeSelected">
-                  <label class="form-check-label">{{ item.name }}</label>
-                </div>
-              </div>
+            <h6>法院別</h6>
+            <div>
+              <select class="form-select" multiple style="height: 60vh;overflow:scroll;" v-model="selectedCourts">
+                <option v-for="(item, index) in courtTypeOptions" :key="index">{{ item.name }}</option>
+              </select>
             </div>
           </div>
 
@@ -62,20 +56,21 @@
           </thead>
           <tbody>
             <tr v-for="(field, index) in formData.searchFields" :key="index">
-              <td class="text-center" style="line-height: 35px;">{{ field.type }}</td>
+              <td class="text-center" style="line-height: 35px;" >{{ field.type }}</td>
               <td class="custom-light-purple"><input type="text" class="form-control custom-light-purple" v-model="field.query" :placeholder="field.example"></td>
             </tr>
-            <!-- <tr>
+            <tr>
               <td>
-                <div class="form-check mx-auto" style="width: fit-content;" v-for="option in poolOptions" :key="option.query">
-                  <input class="form-check-input" type="radio" name="flexRadio" :id="option.query" v-model="poolKeyword.query" :value="option.query">
-                  <label class="form-check-label" :for="option.query">
-                    {{ option.type }}
-                  </label>
+                <div class="form-check mx-auto" style="width: fit-content;" v-for="option in poolOptions" :key="option.name">
+                  <input class="form-check-input" type="radio" name="flexRadio" :id="option.name" v-model="selectedSearchType" :value="option.name">
+                    <label class="form-check-label" :for="option.name">
+                      {{ option.type }}
+                    </label>
                 </div>
+                <div class="form-instruction">💡單次搜尋只能選擇一項見解，心證，或涵攝關鍵字</div>
               </td>
-              <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 150px" v-model="poolKeyword.keyword" :placeholder="poolOptions[poolKeyword.query].example" /></td>
-            </tr> -->
+              <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 130px" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"/></td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -92,7 +87,7 @@
 </template>
 
 <script>
-
+import { ElMessage } from 'element-plus'
 export default {
   name: 'SearchForm',
   components: {
@@ -103,46 +98,59 @@ export default {
         court_type: '',
         refereeDate: '',
         searchFields: [
-          {type: '案件別', name:'case_kind', example: '詐欺', query: ''},
-          {type: '基本資料的關鍵字', name:'basic_info', example: '', query: ''},
+          {type: '案件別', name:'case_kind', example: '例如詐欺', query: ''},
+          {type: '當事人等基本資料', name:'basic_info', example: '', query: ''},
           {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
-          {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
-          {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
-          {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
+          // {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
+          // {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
+          // {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
           {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
         ],
       },
+      selectedSearchType: 'opinion',
       poolOptions: {
-        sub: {type: '涵攝', query: 'sub', example: '二、按汽車行駛至交岔路口，其行進、轉彎，應依下列規定：一、應遵守燈光號誌或交通指揮人員之指揮，遇有交通指揮人員指揮與燈光號誌並用時，以交通指揮人員之指揮為準；駕駛人駕駛汽車，除應遵守道路交通標誌、標線、號誌之指示；閃光紅燈表示『停車再開』，車輛應減速接近，先停止於交差岔路口前，讓幹到車優先通行後認為安全時，方得續行；閃光黃燈表示『警告』，車輛應減速接近，注意安全，小心通過，道路交通安全規則第102條第1項第1款、第90條第1項、道路交通標誌標線號誌設置規則第211條第1項第2款、第1款分別訂有明文。查被告2人分別為領有職業大貨車、職業小貨車駕駛執照駕駛車輛使用道路之人，對此自應知悉，且依上開道路交通事故調查報告表（一）、（二）、現場及雙方車損照片42張所示，案發當時天候為晴天，夜間有照明（原調查報告表（一）⑥光線誤勾選為1日間自然光線，應予更正），路面乾燥無缺陷無障礙物、視距良好、多岔路路口閃光號誌、號誌正常、無分向設施、未繪設車道線、未繪設快慢車道分隔線、係路口交岔撞等情，客觀上並無不能注意之情事，被告2人於案發時地駕駛車輛，疏未注意車前狀況，未能暫停再開，以採取必要之安全措施，進而發生本件碰撞事故，所為確有違反前開道路交通安全規則所定之過失甚明。且本件經送請臺中市車輛行車事故鑑定委員會鑑定結果，亦認為被告陳伯宇駕駛計程車，行至設有閃光橫紅燈號誌交岔路口，支線道車未暫停讓幹線道車先行，為肇事主因；賴俊卿駕駛計程車，行經設有閃光黃燈號誌交岔路口，疏未減速接近、注意安全、小心通過，為肇事次因，有鑑定意見書可參（見偵卷第127至132頁），對此鑑定意見，檢察官、被告2人亦均表示沒有意見（見本院卷第54頁），益徵被告2人於案發當時駕駛車輛行駛至柳川西路1段與三民西路交岔路口時，確實有過失等情，至為昭然。綜上所述，堪認被告2人過失行為與告訴人之傷害結果間具有相當因果關係，本件事證明確，被告業務過失傷害之犯行洵堪認定，應予依法論科'},
-        op: {type: '見解', query: 'op', example: '因此，當事人同意或依法視為同意某項傳聞證據作為證據使用者，實質上即表示有反對詰問權之當事人已捨棄其權利，如法院認為適當者，不論該傳聞證據是否具備刑事訴訟法第159條之1至第159條之4所定情形，均容許作為證據；換言之，當事人捨棄對原陳述人行使反對詰問權者，如法院認為適當，即容許該傳聞證據作為證據，不以未具備刑事訴訟法第159條之1至第159條之4所定情形為前提（最高法院97年度臺上字第6162號判決意旨參照）'},
-        ft:  {type: '心證', query: 'ft', example: '二、認定犯罪事實所憑之證據及理由：一上開犯罪事實，業據被告於本院準備程序及審理中坦承不諱，且其於前揭時、地為警查獲後經採尿送驗結果，確呈嗎啡、可待因、甲基安非他命、安非他命陽性反應，有勘察採證同意書、臺中市政府警察局第四分局偵辦毒品案件尿液檢體對照表及詮昕科技股份有限公司濫用藥物尿液檢驗報告各1紙在卷可稽（見偵卷第18、34-35頁），被告之自白與事實相符，堪予採信。至起訴書犯罪事實欄固載被告係於不同時間分別施用第一級毒品海洛因及第二級毒品甲基安非他命，惟被告於警詢僅供陳施用海洛因（見偵卷第23頁），偵查中經傳喚未到庭，在本院準備程序及審理時方陳明係同時施用第一級毒品海洛因及第二級毒品甲基安非他命，被告於本院所供，核與其他卷內證據並無扞格，因乏確切證據足認被告係於不同時間分別施用該2毒品，則依有疑唯利被告之原則，被告於本院所供尚堪採信，起訴意旨容有未洽。從而，本件事證明確，被告犯行洵堪認定，應予依法論科'}
-      },
-      poolKeyword: {
-        name: 'pool', query: 'op', keyword: ''
+        opinion: {type: '法院見解的關鍵字', name: 'opinion', query: '', example: '請輸入法院見解的關鍵字'},
+        fee:  {type: '法官心證的關鍵字(限地院)', name: 'fee', query: '', example: '請輸入法官心證的關鍵字(限地院)'},
+        sub: {type: '法官涵攝的關鍵字(限地院)', name: 'sub', query: '', example: '請輸入法官涵攝的關鍵字(限地院)'}
       },
       courtTypeOptions: [
-        { name: '臺灣臺北地方法院', value: 'a' },
-        { name: '臺灣士林地方法院', value: 'b' },
-        { name: '臺灣新北地方法院', value: 'c' },
-        { name: '臺灣宜蘭地方法院', value: 'd' },
-        { name: '臺灣基隆地方法院', value: 'e' },
-        { name: '臺灣桃園地方法院', value: 'f' },
-        { name: '臺灣新竹地方法院', value: 'g' },
-        { name: '臺灣苗栗地方法院', value: 'h' },
-        { name: '臺灣臺中地方法院', value: 'i' },
-        { name: '臺灣彰化地方法院', value: 'j' },
-        { name: '臺灣南投地方法院', value: 'k' },
-        { name: '臺灣雲林地方法院', value: 'l' },
-        { name: '臺灣嘉義地方法院', value: 'm' },
-        { name: '臺灣臺南地方法院', value: 'n' },
-        { name: '臺灣高雄地方法院', value: 'o' },
-        { name: '臺灣橋頭地方法院', value: 'p' },
-        { name: '臺灣花蓮地方法院', value: 'q' },
-        { name: '臺灣臺東地方法院', value: 'r' },
-        { name: '臺灣屏東地方法院', value: 's' },
-        { name: '臺灣澎湖地方法院', value: 't' },
-        { name: '福建金門地方法院', value: 'v' },
-        { name: '福建連江地方法院', value: 'w' }
+        { name: '最高法院', value: 'zgf' },
+        { name: '最高行政法院', value: 'zgxzfy' },
+        { name: '懲戒法院', value: 'cjfy' },
+        { name: '法官學院', value: 'fgxy' },
+        { name: '臺灣高等法院', value: 'twgdfy' },
+        { name: '臺北高等行政法院', value: 'tbkxzf' },
+        { name: '臺中高等行政法院', value: 'tcgxzf' },
+        { name: '高雄高等行政法院', value: 'kxgxzf' },
+        { name: '智慧財產及商業法院', value: 'zhccjsyfy' },
+        { name: '臺灣高等法院臺中分院', value: 'twgdfytcfy' },
+        { name: '臺灣高等法院臺南分院', value: 'twgdfytnfy' },
+        { name: '臺灣高等法院高雄分院', value: 'twgdfykxfy' },
+        { name: '臺灣高等法院花蓮分院', value: 'twgdfyhlfy' },
+        { name: '福建高等法院金門分院', value: 'fjgdfyjmfy' },
+        { name: '臺灣臺北地方法院', value: 'twtbdfy' },
+        { name: '臺灣新北地方法院', value: 'twxbdfy' },
+        { name: '臺灣士林地方法院', value: 'twslgdfy' },
+        { name: '臺灣桃園地方法院', value: 'twtydfy' },
+        { name: '臺灣新竹地方法院', value: 'twxzdfy' },
+        { name: '臺灣苗栗地方法院', value: 'twmldfy' },
+        { name: '臺灣臺中地方法院', value: 'twtcdfy' },
+        { name: '臺灣南投地方法院', value: 'twntdfy' },
+        { name: '臺灣彰化地方法院', value: 'twzhdfy' },
+        { name: '臺灣雲林地方法院', value: 'twyldfy' },
+        { name: '臺灣嘉義地方法院', value: 'twjydfy' },
+        { name: '臺灣臺南地方法院', value: 'twtndfy' },
+        { name: '臺灣高雄地方法院', value: 'twkxdfy' },
+        { name: '臺灣橋頭地方法院', value: 'twqtdfy' },
+        { name: '臺灣高雄少年及家事法院', value: 'twkxsnjjdfy' },
+        { name: '臺灣屏東地方法院', value: 'twptdfy' },
+        { name: '臺灣臺東地方法院', value: 'twtdgdfy' },
+        { name: '臺灣花蓮地方法院', value: 'twhldfy' },
+        { name: '臺灣宜蘭地方法院', value: 'twyldfy' },
+        { name: '臺灣基隆地方法院', value: 'twjldfy' },
+        { name: '臺灣澎湖地方法院', value: 'twphdfy' },
+        { name: '福建金門地方法院', value: 'fjjmdfy' },
+        { name: '福建連江地方法院', value: 'fjljdfy' }
       ],
       showModal: false,
       isSelectedAllCourts: true,
@@ -162,6 +170,46 @@ export default {
   },
   mounted() {
     this.initializeForm()
+  },
+  watch: {
+    'selectedDateRange.from': {
+      handler(newValue) {
+        // Convert year and month to integers for comparison
+        const fromYear = parseInt(newValue.year);
+        const fromMonth = parseInt(newValue.month);
+        const toYear = parseInt(this.selectedDateRange.to.year);
+        const toMonth = parseInt(this.selectedDateRange.to.month);
+
+        // Compare year and month directly
+        if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
+          // If from date is later than to date, set to date equal to from date
+          this.selectedDateRange.to.year = newValue.year;
+          this.selectedDateRange.to.month = newValue.month;
+        }
+        ElMessage({
+          message: '起始日不可晚於結束日',
+          type: 'warning',
+        })
+      },
+      deep: true,
+    },
+    'selectedDateRange.to': {
+      handler(newValue) {
+        // Convert year and month to integers for comparison
+        const toYear = parseInt(newValue.year);
+        const toMonth = parseInt(newValue.month);
+        const fromYear = parseInt(this.selectedDateRange.from.year);
+        const fromMonth = parseInt(this.selectedDateRange.from.month);
+
+        // Compare year and month directly
+        if (toYear < fromYear || (toYear === fromYear && toMonth < fromMonth)) {
+          // If to date is earlier than from date, set from date equal to to date
+          this.selectedDateRange.from.year = newValue.year;
+          this.selectedDateRange.from.month = newValue.month;
+        }
+      },
+      deep: true,
+    },
   },
   methods: {
     getSelectableYears() {
@@ -185,19 +233,6 @@ export default {
       )
 
       return `${fromYear}${fromMonth.padStart(2, "0")}01-${toYear}${toMonth.padStart(2, "0")}${lastDate}`;
-  },
-    submitSelection() {
-      console.log('Selected Items:', this.selectedCourts)
-      this.formData.court_type = this.selectedCourts.join(', ')
-      this.showModal = false
-    },
-    changeSelected() {
-      if(this.selectedCourts.length != this.courtTypeOptions.map(option => option.name).length) {
-        this.isSelectedAllCourts = false
-      }
-      else {
-        this.isSelectedAllCourts = true
-      }
     },
     selectedCourtsAll() {
       this.selectedCourts = this.courtTypeOptions.map(option => option.name)
@@ -206,8 +241,7 @@ export default {
       this.selectedCourts = []
     },
     initializeForm(){
-      this.formData.court_type = this.courtTypeOptions.map(option => option.name).join(', ')
-      this.selectedCourtsAll()
+      this.formData.court_type = this.courtTypeOptions.map(option => option.name).join(' ')
     },
     onSubmit() {
       // TODO: Implement your submission logic here
@@ -225,7 +259,7 @@ export default {
       let queryParams = {}
 
       // Add courtType and refereeDate to queryParams
-      this.formData.court_type = this.selectedCourts.join(', ')
+      this.formData.court_type = this.selectedCourts.join(' ')
       this.formData.refereeDate = this.dateFormat()
       queryParams.court_type = this.formData.court_type
       queryParams.jud_date = this.formData.refereeDate
@@ -235,6 +269,10 @@ export default {
         queryParams[field.name] = field.query
       });
 
+      if(this.selectedSearchType != '') {
+        queryParams[this.selectedSearchType] = this.poolOptions[this.selectedSearchType].query
+      }
+      
       // Use Vue Router to navigate with constructed query parameters
       this.$router.push({ path: '/search-result', query: queryParams })
     },
@@ -244,6 +282,24 @@ export default {
 
 
 <style>
+.form-check-input {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 24px !important;
+}
+.form-check-label {
+  width: 250px;
+  line-height: 35px;
+  text-align: center;
+  cursor: pointer;
+}
+.form-instruction {
+  text-align: center;
+  margin: 5px 10px;
+  color: #707070;
+  font-size: 0.9em;
+}
+
 .custom-brightblue{
   padding: 20px !important;
   background-color: #0d99ff !important;
