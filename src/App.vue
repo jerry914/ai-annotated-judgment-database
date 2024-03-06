@@ -1,20 +1,27 @@
 <template>
-  <nav class="container md-6">
-    <div class="text-center">
-      <div v-if="$route.path!='/'" class="back-btn">
-        <router-link to="/">回搜尋頁</router-link>
+  <div class="main-container">
+    <nav class="container md-6">
+      <div class="text-center">
+        <div v-if="$route.path!='/'" class="back-btn">
+          <router-link to="/">回搜尋頁</router-link>
+        </div>
+        <div class="col">
+          <strong>裁判書資訊結構化（涵攝及見解）資料庫 － {{ page_name }}</strong>
+        </div>
       </div>
-      <div class="col">
-        <strong>裁判書資訊結構化（涵攝及見解）資料庫 － {{ page_name }}</strong>
-      </div>
-    </div>
-  </nav>
-  <router-view/>
-  <div class="mt-2 text-center" style="z-index:-1;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</div>
+    </nav>
+    <router-view/>
+  </div>
+  <my-footer></my-footer>
+  <!-- <div class="mt-2 text-center" style="z-index:-1;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</div> -->
 </template>
 
 <script>
+import myFooter from './components/footer';
 export default {
+  components: {
+    myFooter
+  },
   data() {
     return {
       page_name: "搜尋頁面"
@@ -27,7 +34,7 @@ body {
   background-color: #fffcf1 !important;
 }
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Noto Sans TC", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #0b0b0b;
@@ -60,5 +67,8 @@ nav a {
   text-decoration: none !important;
   color: #000;
   font-weight: 400 !important;
+}
+.main-container {
+  min-height: calc( 100vh - 120px );
 }
 </style>

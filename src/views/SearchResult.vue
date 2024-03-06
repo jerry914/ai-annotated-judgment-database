@@ -25,7 +25,7 @@
     </div>
 
     <el-pagination
-      v-model="pageDetial.page"
+      :current-page="pageDetial.page"
       :page-size="pageDetial.size"
       :page-sizes="[10, 50, 100, 200]"
       :total="pageDetial.total"
@@ -42,6 +42,7 @@
           <table class="table table-bordered custom-adjust-table">
             <thead>
               <tr class="text-center">
+                <th class="custom-blue" >Index</th>
                 <template v-for="field in searchFields" :key="field.name">
                   <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
                 </template>
@@ -49,15 +50,16 @@
             </thead>
             <tbody>
               <tr v-for="(item, index) in searchResults" :key="index">
+                <td style="text-align: center;">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
                 <template v-for="field in searchFields" :key="field.name" >
-                  <td v-if="checkQueryEnable(field.name)" :style="field.name=='basic_info'?'min-width: 250px;':''">
+                  <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
                     <template v-if="field.name == 'case_num'">
                       <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
                     </template>
                     <template v-else>
                       <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
-                      <p v-else-if="item[field.name].length > maxTextLength" class="mytooltip" @click="openDialog(addHighlighter(field.name, item[field.name]))">
-                        <span v-html="addHighlighter(field.name, item[field.name].substr(0,100))"></span>...more
+                      <p v-else-if="(item[field.name].length > maxTextLength || (item[field.name].match(/\n/g) || []).length > 5)" class="mytooltip custom-overflow-column" @click="openDialog(addHighlighter(field.name, item[field.name]))">
+                        <span  v-html="addHighlighter(field.name, item[field.name].substr(0,250))"></span>...more
                         <span class="tooltiptext">點擊閱讀全文</span>
                       </p>
                       <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
@@ -82,7 +84,7 @@
       <span v-html="dialogText"></span>
     </el-dialog>
     <el-pagination
-      v-model="pageDetial.page"
+      :current-page="pageDetial.page"
       :page-size="pageDetial.size"
       :page-sizes="[10, 50, 100, 200]"
       :total="pageDetial.total"
@@ -135,7 +137,7 @@ export default {
           "主觀 殺人"
         ]
       ],
-      maxTextLength: 100,
+      maxTextLength: 250,
       dialogVisible: false,
       dialogText: ''
     };
@@ -146,6 +148,21 @@ export default {
     this.fetchData()
   },
   methods: {
+    getColumnWidth(name) {
+      if (name == 'basic_info') {
+        return 'min-width: 260px;'
+      }
+      else if (name == 'jud_date') {
+        return 'min-width: 90px;'
+      }
+      else if (name == 'case_type') {
+        return 'min-width: 125px;'
+      }
+      else if (name == 'case_num') {
+        return 'min-width: 90px;'
+      }
+      return ''
+    },
     openDialog(content) {
       this.dialogVisible = true
       this.dialogText = content
@@ -233,7 +250,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://105f-140-114-83-23.ngrok-free.app/api/search', {
+        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
@@ -272,14 +289,20 @@ export default {
   background-color: #BDE3FF !important;
   border: #97B6CC 1px solid !important;
 }
-td {
+.table td {
   min-height: 75px;
   height: 75px;
-  padding: 30px 10px !important;
+  padding: 10px 10px 5px 10px !important;
+  text-align: justify;
+}
+td > a {
+  font-weight: 500;
+  text-align: justify;
 }
 .custom-adjust-table {
   width: calc( 100% + 2px ) !important;
   transform: translateX(-1px);
+  overflow: scroll;
 }
 
 .mytooltip {
@@ -313,5 +336,11 @@ td {
 .no-found-cell {
   background-color: #fff;
   text-align: center;
+}
+.custom-overflow-column > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

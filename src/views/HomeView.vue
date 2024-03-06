@@ -1,13 +1,28 @@
 <template>
   <div class="container mt-4">
-    <div class="row">
+    <el-row>
       <!-- Left column for form inputs -->
-      <div class="col-md-3">
+      <el-col :lg="{'span':6,'offset':1}" :md="24">
         <form @submit.prevent="onSubmit">
           <!-- Case type input -->
           <!-- Court type select -->
           <div class="form-group">
             <h6>法院別</h6>
+            <!-- Checkboxes for court selection -->
+            <div>
+              <input type="checkbox" id="selectAll" v-model="selectAllCourts" @change="selectAllChanged">
+              <label for="selectAll">所有法院</label>
+            </div>
+            <div>
+              <input type="checkbox" id="selectSupremeCourts" v-model="selectSupremeCourts" @change="selectSupremeCourtsChanged">
+              <label for="selectSupremeCourts">所有高等法院</label>
+            </div>
+            <div>
+              <input type="checkbox" id="selectDistrictCourts" v-model="selectDistrictCourts" @change="selectDistrictCourtsChanged">
+              <label for="selectDistrictCourts">所有地方法院</label>
+            </div>
+
+            <!-- Court Selection Dropdown -->
             <div>
               <select class="form-select" multiple style="height: 60vh;overflow:scroll;" v-model="selectedCourts">
                 <option v-for="(item, index) in courtTypeOptions" :key="index">{{ item.name }}</option>
@@ -22,7 +37,8 @@
               <span class="p-2">起</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.year">
-                <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
+                <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
+                <option :value="111">111</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.month">
@@ -34,7 +50,8 @@
               <span class="p-2">迄</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.year">
-                <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option>
+                <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
+                <option :value="111">111</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.month">
@@ -44,32 +61,32 @@
             </div>
           </div>
         </form>
-      </div>
-      <div class="col-md-9">
+      </el-col>
+      <el-col :lg="{'span':16,'offset':1}" :md="24" style="margin-top: 20px;">
         <div class="p-0 border rounded-3" style="overflow: hidden;">
         <table class="table table-bordered custom-adjust-table">
           <thead class="text-center">
             <tr>
-              <th>搜尋類型</th>
+              <th style="width: 350px;background-color: #f5f5f5;">搜尋類型</th>
               <th class="custom-light-purple">請輸入搜尋條件</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(field, index) in formData.searchFields" :key="index">
-              <td class="text-center" style="line-height: 35px;" >{{ field.type }}</td>
-              <td class="custom-light-purple"><input type="text" class="form-control custom-light-purple" v-model="field.query" :placeholder="field.example"></td>
+              <td style="line-height: 50px;padding-left: 30px !important;background-color: #f5f5f5;">{{ field.type }}</td>
+              <td class="custom-light-purple"><input type="text" class="form-control custom-light-purple" style="height: 50px; background-color: #fff !important;" v-model="field.query" :placeholder="field.example"></td>
             </tr>
             <tr>
-              <td>
+              <td style="background-color: #f5f5f5;">
                 <div class="form-check mx-auto" style="width: fit-content;" v-for="option in poolOptions" :key="option.name">
                   <input class="form-check-input" type="radio" name="flexRadio" :id="option.name" v-model="selectedSearchType" :value="option.name">
-                    <label class="form-check-label" :for="option.name">
+                    <label class="form-check-label" style="text-align: left; margin-left: 10px;" :for="option.name">
                       {{ option.type }}
                     </label>
                 </div>
-                <div class="form-instruction">💡單次搜尋只能選擇一項見解，心證，或涵攝關鍵字</div>
+                <div class="form-instruction">💡此處只能選擇見解，心證，或涵攝其中一項</div>
               </td>
-              <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 130px" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"/></td>
+              <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 130px; background-color: #fff !important;" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"/></td>
             </tr>
           </tbody>
         </table>
@@ -77,8 +94,8 @@
         <div class="d-flex flex-row-reverse my-5">
           <button class="btn btn-secondary d-inline-flex custom-purlpe" @click="advanceSearch">進階搜尋條件送出</button>
         </div>
-      </div>
-    </div>
+      </el-col>
+    </el-row>
 
     <div v-if="showErrorAlert" class="alert alert-danger mt-2" role="alert">
       無法同時選擇一項以上的涵攝，見解，或心證，請修改後送出。
@@ -87,6 +104,7 @@
 </template>
 
 <script>
+// import { offset } from '@popperjs/core';
 import { ElMessage } from 'element-plus'
 export default {
   name: 'SearchForm',
@@ -115,13 +133,7 @@ export default {
       },
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
-        { name: '最高行政法院', value: 'zgxzfy' },
-        { name: '懲戒法院', value: 'cjfy' },
-        { name: '法官學院', value: 'fgxy' },
         { name: '臺灣高等法院', value: 'twgdfy' },
-        { name: '臺北高等行政法院', value: 'tbkxzf' },
-        { name: '臺中高等行政法院', value: 'tcgxzf' },
-        { name: '高雄高等行政法院', value: 'kxgxzf' },
         { name: '智慧財產及商業法院', value: 'zhccjsyfy' },
         { name: '臺灣高等法院臺中分院', value: 'twgdfytcfy' },
         { name: '臺灣高等法院臺南分院', value: 'twgdfytnfy' },
@@ -142,7 +154,6 @@ export default {
         { name: '臺灣臺南地方法院', value: 'twtndfy' },
         { name: '臺灣高雄地方法院', value: 'twkxdfy' },
         { name: '臺灣橋頭地方法院', value: 'twqtdfy' },
-        { name: '臺灣高雄少年及家事法院', value: 'twkxsnjjdfy' },
         { name: '臺灣屏東地方法院', value: 'twptdfy' },
         { name: '臺灣臺東地方法院', value: 'twtdgdfy' },
         { name: '臺灣花蓮地方法院', value: 'twhldfy' },
@@ -152,12 +163,15 @@ export default {
         { name: '福建金門地方法院', value: 'fjjmdfy' },
         { name: '福建連江地方法院', value: 'fjljdfy' }
       ],
+      selectedCourts: [],
+      selectAllCourts: false,
+      selectSupremeCourts: false,
+      selectDistrictCourts: false,
       showModal: false,
       isSelectedAllCourts: true,
-      selectedCourts: [],
       selectedDateRange: {
         from: {
-          year: '107',
+          year: '111',
           month: '1'
         },
         to: {
@@ -210,6 +224,9 @@ export default {
       },
       deep: true,
     },
+    selectedCourts(newVal) {
+      this.selectAllCourts = newVal.length === this.courtTypeOptions.length;
+    }
   },
   methods: {
     getSelectableYears() {
@@ -234,11 +251,31 @@ export default {
 
       return `${fromYear}${fromMonth.padStart(2, "0")}01-${toYear}${toMonth.padStart(2, "0")}${lastDate}`;
     },
-    selectedCourtsAll() {
-      this.selectedCourts = this.courtTypeOptions.map(option => option.name)
+    selectAllChanged() {
+      if (this.selectAllCourts) {
+        this.selectedCourts = this.courtTypeOptions.map(option => option.name);
+      } else {
+        this.selectedCourts = [];
+      }
     },
-    cancelCourtsAll() {
-      this.selectedCourts = []
+    selectSupremeCourtsChanged() {
+      const supremeCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('高等法院'))
+        .map(option => option.name);
+      this.updateSelection(this.selectSupremeCourts, supremeCourtValues);
+    },
+    selectDistrictCourtsChanged() {
+      const districtCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('地方法院'))
+        .map(option => option.name);
+      this.updateSelection(this.selectDistrictCourts, districtCourtValues);
+    },
+    updateSelection(isSelected, courtValues) {
+      if (isSelected) {
+        this.selectedCourts = [...new Set([...this.selectedCourts, ...courtValues])];
+      } else {
+        this.selectedCourts = this.selectedCourts.filter(name => !courtValues.includes(name));
+      }
     },
     initializeForm(){
       this.formData.court_type = this.courtTypeOptions.map(option => option.name).join(' ')
@@ -255,7 +292,6 @@ export default {
       }, 5000);
     },
     advanceSearch() {
-      console.log('Submitted', this.formData)
       let queryParams = {}
 
       // Add courtType and refereeDate to queryParams
