@@ -1,6 +1,8 @@
 <template>
   <div class="container mt-4">
+    
     <el-row>
+      <el-col :span="24"><el-button @click="changeRoute('/about')" style="width: 100%;height: 3em;" type="success">網頁使用說明</el-button></el-col>
       <!-- Left column for form inputs -->
       <el-col :lg="{'span':6}" :md="24">
         <form @submit.prevent="onSubmit">
@@ -234,6 +236,9 @@ export default {
     }
   },
   methods: {
+    changeRoute(route){
+      this.$router.push(route)
+    },
     getSelectableYears() {
       return new Date().getFullYear() - 1911
     },

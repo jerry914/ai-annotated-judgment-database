@@ -340,7 +340,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
+        const response = await axios.get('http://140.114.80.195:6128/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
