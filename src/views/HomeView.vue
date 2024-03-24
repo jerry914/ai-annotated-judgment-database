@@ -66,7 +66,7 @@
         </form>
       </el-col>
       <el-col :lg="{'span':17,'offset':1}" :md="24" style="margin-top: 20px;">
-        <div class="p-0 border rounded-3" style="overflow: scroll;">
+        <div class="p-0 border rounded-3">
           <div class="flex-container">
           <div class="flex-row header">
             <div class="flex-column">搜尋類型</div>
@@ -198,16 +198,15 @@ export default {
         const toYear = parseInt(this.selectedDateRange.to.year);
         const toMonth = parseInt(this.selectedDateRange.to.month);
 
-        // Compare year and month directly
         if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
           // If from date is later than to date, set to date equal to from date
           this.selectedDateRange.to.year = newValue.year;
           this.selectedDateRange.to.month = newValue.month;
+          ElMessage({
+            message: '起始日不可晚於結束日',
+            type: 'warning',
+          })
         }
-        ElMessage({
-          message: '起始日不可晚於結束日',
-          type: 'warning',
-        })
       },
       deep: true,
     },
@@ -341,7 +340,8 @@ export default {
 }
 .select-court-container {
   height: 50vh;
-  overflow:scroll;
+  overflow: scroll;
+  overflow-x: hidden;
 }
 .form-check-input {
   width: 20px !important;

@@ -22,82 +22,78 @@
       </div>
     </div>
     
-    <div class="pagination-container">
-      <el-pagination
-        :current-page="pageDetial.page"
-        :page-size="pageDetial.size"
-        :page-sizes="[10, 50, 100]"
-        :total="pageDetial.total"
-        background
-        layout="total, sizes, prev, pager, next"
-        @size-change="handlePageSize"
-        @current-change="handlePageChange"
-      />
-    
-    <!-- Third Row: Data Tables -->
-    <div class="row mt-3 mb-3">
-      <!-- 裁判資訊 Table -->
-      <div class="col-md-12">
-        <div class="border">
-          <table class="table table-bordered custom-adjust-table">
-            <thead>
-              <tr class="text-center">
-                <th class="custom-blue">序號</th>
-                <template v-for="field in searchFields" :key="field.name">
-                  <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
-                </template>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in searchResults" :key="index">
-                <td style="text-align: center;">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
-                <template v-for="field in searchFields" :key="field.name" >
-                  <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
-                    <template v-if="field.name == 'case_num'">
-                      <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
-                    </template>
-                    <template v-if="field.name == 'jud_date'">
-                      {{ formatDate(item['jud_date']) }}
-                    </template>
-                    <template v-else>
-                      <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
-                      <p v-else-if="(item[field.name].length > maxTextLength || (item[field.name].match(/\n/g) || []).length > 5)" class="mytooltip custom-overflow-column" @click="openDialog(addHighlighter(field.name, item[field.name]))">
-                        <span  v-html="addHighlighter(field.name, item[field.name].substr(0,250))"></span>...more
-                        <span class="tooltiptext">點擊閱讀全文</span>
-                      </p>
-                      <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
-                    </template>
-                </td>
-                </template>
-              </tr>
-              <tr v-if="searchResults.length == 0">
-                <td class="no-found-cell" colspan="8">查無資料
-                </td></tr>
-            </tbody>
-          </table>
+    <div class="custom-table-container">
+      <div class="pagination-container">
+        <el-pagination
+          :current-page="pageDetial.page"
+          :page-size="pageDetial.size"
+          :page-sizes="[10, 50, 100]"
+          :total="pageDetial.total"
+          background
+          layout="total, sizes, prev, pager, next"
+          @size-change="handlePageSize"
+          @current-change="handlePageChange"
+        />
         </div>
+      <!-- 裁判資訊 Table -->
+        <table class="table table-bordered custom-adjust-table">
+          <thead>
+            <tr class="text-center">
+              <th class="custom-blue">序號</th>
+              <template v-for="field in searchFields" :key="field.name">
+                <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
+              </template>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in searchResults" :key="index">
+              <td style="text-align: center;">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
+              <template v-for="field in searchFields" :key="field.name" >
+                <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
+                  <template v-if="field.name == 'case_num'">
+                    <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
+                  </template>
+                  <template v-if="field.name == 'jud_date'">
+                    {{ formatDate(item['jud_date']) }}
+                  </template>
+                  <template v-else>
+                    <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
+                    <p v-else-if="(item[field.name].length > maxTextLength || (item[field.name].match(/\n/g) || []).length > 5)" class="mytooltip custom-overflow-column" @click="openDialog(addHighlighter(field.name, item[field.name]))">
+                      <span  v-html="addHighlighter(field.name, item[field.name].substr(0,250))"></span>...more
+                      <span class="tooltiptext">點擊閱讀全文</span>
+                    </p>
+                    <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
+                  </template>
+              </td>
+              </template>
+            </tr>
+            <tr v-if="searchResults.length == 0">
+              <td class="no-found-cell" colspan="8">查無資料
+              </td></tr>
+          </tbody>
+        </table>
+      <el-dialog
+        v-model="dialogVisible"
+        width="60%"
+        style="max-height: 80vh; overflow: scroll;"
+        :before-close="handleClose"
+      >
+        <span v-html="dialogText"></span>
+      </el-dialog>
+
+      <div class="pagination-container">
+        <el-pagination
+          :current-page="pageDetial.page"
+          :page-size="pageDetial.size"
+          :page-sizes="[10, 50, 100]"
+          :total="pageDetial.total"
+          background
+          layout="total, sizes, prev, pager, next"
+          @size-change="handlePageSize"
+          @current-change="handlePageChange"
+        />
       </div>
     </div>
-    <el-dialog
-      v-model="dialogVisible"
-      width="60%"
-      style="max-height: 80vh; overflow: scroll;"
-      :before-close="handleClose"
-    >
-      <span v-html="dialogText"></span>
-    </el-dialog>
-      <el-pagination
-        :current-page="pageDetial.page"
-        :page-size="pageDetial.size"
-        :page-sizes="[10, 50, 100]"
-        :total="pageDetial.total"
-        background
-        layout="total, sizes, prev, pager, next"
-        @size-change="handlePageSize"
-        @current-change="handlePageChange"
-      />
-    </div>
-    
   </div>
 </template>
 
@@ -196,7 +192,7 @@ export default {
       else if (name == 'case_num') {
         return 'min-width: 90px;'
       }
-      return ''
+      return 'min-width: 200px;'
     },
     openDialog(content) {
       this.dialogVisible = true
@@ -370,6 +366,7 @@ export default {
 <style>
 .result-page-container {
   padding: 20px;
+  overflow-x: hidden;
 }
 .btn-light-green {
   background-color: #14AE5C !important;
@@ -399,9 +396,12 @@ td > a {
   font-weight: 500;
   text-align: justify;
 }
+.custom-table-container {
+  overflow-x: scroll;
+}
 .custom-adjust-table {
-  width: calc( 100% + 2px ) !important;
-  transform: translateX(-1px);
+  width: 100% !important;
+  margin: 10px 0 !important;
 }
 
 .mytooltip {
@@ -445,7 +445,6 @@ td > a {
 .pagination-container {
   padding: 10px 0;
   max-width: 100vw;
-  overflow: scroll;
 }
 .condition-block {
   margin: 3px 5px;

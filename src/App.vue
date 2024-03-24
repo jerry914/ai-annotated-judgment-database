@@ -70,7 +70,7 @@ nav a {
   font-weight: 400 !important;
 }
 .main-container {
-  min-height: calc( 70vh - 90px );
+  min-height: calc( 90vh - 90px );
 }
 .jump-bar {
   width: 100vw;
