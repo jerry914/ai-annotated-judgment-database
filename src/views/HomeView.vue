@@ -340,7 +340,7 @@ export default {
 }
 .select-court-container {
   height: 50vh;
-  overflow: scroll;
+  overflow: auto;
   overflow-x: hidden;
 }
 .form-check-input {

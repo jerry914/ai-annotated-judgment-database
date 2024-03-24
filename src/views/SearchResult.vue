@@ -75,7 +75,7 @@
       <el-dialog
         v-model="dialogVisible"
         width="60%"
-        style="max-height: 80vh; overflow: scroll;"
+        style="max-height: 80vh; min-width: 200px;overflow: auto;"
         :before-close="handleClose"
       >
         <span v-html="dialogText"></span>

@@ -3,7 +3,7 @@
 set -e
 
 # npm run build
-npm run build --env.VERSION=1.0.6
+npm run build --env.VERSION=1.0.7
 
 cd dist
 
