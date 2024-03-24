@@ -1,13 +1,14 @@
 <template>
-  <div class="container" v-loading="loading">
+  <div class="container result-page-container" v-loading="loading">
     <!-- First Row: Search Query and Statistical Results -->
+    <el-button @click="changeRoute('/')" type="primary" style="width: 100px;margin-bottom: 10px;">回搜尋頁</el-button>
     <div class="row">
       <div class="col-md-9">
+        
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
         <div>
           <div class="d-flex flex-wrap">
-            <!-- <div class="px-2 pb-1" v-for="info in conditionInfo" :key="info">{{ info }}</div> -->
-            <div class="px-2 pb-1" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
+            <div class="condition-block" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
           </div>
         </div>
       </div>
@@ -19,30 +20,29 @@
           </template>
         </div>
       </div>
-      <!-- <div class="col-md-2">
-        <button type="button" class="btn btn-light-green">下載搜尋結果</button>
-      </div> -->
     </div>
-
-    <el-pagination
-      :current-page="pageDetial.page"
-      :page-size="pageDetial.size"
-      :page-sizes="[10, 50, 100, 200]"
-      :total="pageDetial.total"
-      background
-      layout="total, sizes, prev, pager, next"
-      @size-change="handlePageSize"
-      @current-change="handlePageChange"
-    />
+    
+    <div class="pagination-container">
+      <el-pagination
+        :current-page="pageDetial.page"
+        :page-size="pageDetial.size"
+        :page-sizes="[10, 50, 100]"
+        :total="pageDetial.total"
+        background
+        layout="total, sizes, prev, pager, next"
+        @size-change="handlePageSize"
+        @current-change="handlePageChange"
+      />
+    
     <!-- Third Row: Data Tables -->
     <div class="row mt-3 mb-3">
       <!-- 裁判資訊 Table -->
       <div class="col-md-12">
-        <div class="rounded-3 border">
+        <div class="border">
           <table class="table table-bordered custom-adjust-table">
             <thead>
               <tr class="text-center">
-                <th class="custom-blue" >Index</th>
+                <th class="custom-blue">序號</th>
                 <template v-for="field in searchFields" :key="field.name">
                   <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
                 </template>
@@ -55,6 +55,9 @@
                   <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
                     <template v-if="field.name == 'case_num'">
                       <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
+                    </template>
+                    <template v-if="field.name == 'jud_date'">
+                      {{ formatDate(item['jud_date']) }}
                     </template>
                     <template v-else>
                       <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
@@ -83,16 +86,18 @@
     >
       <span v-html="dialogText"></span>
     </el-dialog>
-    <el-pagination
-      :current-page="pageDetial.page"
-      :page-size="pageDetial.size"
-      :page-sizes="[10, 50, 100, 200]"
-      :total="pageDetial.total"
-      background
-      layout="total, sizes, prev, pager, next"
-      @size-change="handlePageChange"
-      @current-change="handlePageChange"
-    />
+      <el-pagination
+        :current-page="pageDetial.page"
+        :page-size="pageDetial.size"
+        :page-sizes="[10, 50, 100]"
+        :total="pageDetial.total"
+        background
+        layout="total, sizes, prev, pager, next"
+        @size-change="handlePageSize"
+        @current-change="handlePageChange"
+      />
+    </div>
+    
   </div>
 </template>
 
@@ -117,6 +122,40 @@ export default {
         sub: {type: '涵攝', name:'sub'},
         jud_full: {type: '全文關鍵字', name:'jud_full'},
       },
+      courtTypeOptions: [
+        { name: '最高法院', value: 'zgf' },
+        { name: '臺灣高等法院', value: 'twgdfy' },
+        { name: '智慧財產及商業法院', value: 'zhccjsyfy' },
+        { name: '臺灣高等法院臺中分院', value: 'twgdfytcfy' },
+        { name: '臺灣高等法院臺南分院', value: 'twgdfytnfy' },
+        { name: '臺灣高等法院高雄分院', value: 'twgdfykxfy' },
+        { name: '臺灣高等法院花蓮分院', value: 'twgdfyhlfy' },
+        { name: '福建高等法院金門分院', value: 'fjgdfyjmfy' },
+        { name: '臺灣臺北地方法院', value: 'twtbdfy' },
+        { name: '臺灣新北地方法院', value: 'twxbdfy' },
+        { name: '臺灣士林地方法院', value: 'twslgdfy' },
+        { name: '臺灣桃園地方法院', value: 'twtydfy' },
+        { name: '臺灣新竹地方法院', value: 'twxzdfy' },
+        { name: '臺灣苗栗地方法院', value: 'twmldfy' },
+        { name: '臺灣臺中地方法院', value: 'twtcdfy' },
+        { name: '臺灣南投地方法院', value: 'twntdfy' },
+        { name: '臺灣彰化地方法院', value: 'twzhdfy' },
+        { name: '臺灣雲林地方法院', value: 'twyldfy' },
+        { name: '臺灣嘉義地方法院', value: 'twjydfy' },
+        { name: '臺灣臺南地方法院', value: 'twtndfy' },
+        { name: '臺灣高雄地方法院', value: 'twkxdfy' },
+        { name: '臺灣橋頭地方法院', value: 'twqtdfy' },
+        { name: '臺灣屏東地方法院', value: 'twptdfy' },
+        { name: '臺灣臺東地方法院', value: 'twtdgdfy' },
+        { name: '臺灣花蓮地方法院', value: 'twhldfy' },
+        { name: '臺灣宜蘭地方法院', value: 'twyldfy' },
+        { name: '臺灣基隆地方法院', value: 'twjldfy' },
+        { name: '臺灣澎湖地方法院', value: 'twphdfy' },
+        { name: '福建金門地方法院', value: 'fjjmdfy' },
+        { name: '福建連江地方法院', value: 'fjljdfy' }
+      ],
+      supremeCourtValues: [],
+      districtCourtValues: [],
       searchResults: [],
       resultCount: [],
       pageDetial: {
@@ -128,14 +167,6 @@ export default {
         "total": 15
       },
       conditionInfo: [
-        [
-          "jud_date",
-          "20220101-20220115"
-        ],
-        [
-          "opinion",
-          "主觀 殺人"
-        ]
       ],
       maxTextLength: 250,
       dialogVisible: false,
@@ -145,9 +176,13 @@ export default {
   created() {
     // Call the method to fetch data when component is created
     this.initParams()
+    this.initializeCourt()
     this.fetchData()
   },
   methods: {
+    changeRoute(route){
+      this.$router.push(route)
+    },
     getColumnWidth(name) {
       if (name == 'basic_info') {
         return 'min-width: 260px;'
@@ -185,17 +220,64 @@ export default {
       return false
     },
     handlePageSize(size) {
-      console.log(size)
       this.pageDetial.size = size
+      this.pageDetial.page = 1
       this.fetchData()
     },
     handlePageChange(page) {
       this.pageDetial.page = page
       this.fetchData()
     },
+    formatDate(dateStr) {
+      const year = parseInt(dateStr.substring(0, 4), 10);
+      const month = parseInt(dateStr.substring(4, 6), 10);
+      const day = parseInt(dateStr.substring(6, 8), 10);
+
+      // Convert to Minguo calendar by subtracting 1911 from the Gregorian year
+      const minguoYear = year - 1911;
+
+      return `民國${minguoYear}年${month}月${day}日`;
+    },
+    convertDateString(input) {
+      // Split the input string into start and end dates
+      const [startDate, endDate] = input.split('-');
+
+      // Format both start and end dates
+      const formattedStartDate = this.formatDate(startDate);
+      const formattedEndDate = this.formatDate(endDate);
+
+      // Combine the formatted dates into the final string
+      return `起${formattedStartDate} - 迄${formattedEndDate}`;
+    },
     getConditionInfo(info) {
       if (this.searchFields[info[0]]) {
-        return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
+        if (this.searchFields[info[0]].name == "jud_date") {
+          return `${this.searchFields[info[0]].type || ''}:  ${this.convertDateString(info[1])}`
+        }
+        else if (this.searchFields[info[0]].name == "court_type") {
+          
+          let searchCourts = info[1].split(' ')
+          this.selectAllCourts = searchCourts.length == this.courtTypeOptions.length
+          this.selectDistrictCourts = this.includesAll(searchCourts, this.districtCourtValues)
+          this.selectSupremeCourts = this.includesAll(searchCourts, this.supremeCourtValues)
+          if(this.selectAllCourts) {
+            return `${this.searchFields[info[0]].type || ''}: 所有法院`
+          }
+          let simplifyCourts = searchCourts
+          if(this.selectDistrictCourts) {
+            simplifyCourts = simplifyCourts.filter( ( el ) => !this.districtCourtValues.includes( el ) )
+            simplifyCourts.unshift('所有地方法院')
+          }
+          if(this.selectSupremeCourts) {
+            simplifyCourts = simplifyCourts.filter( ( el ) => !this.supremeCourtValues.includes( el ) )
+            simplifyCourts.unshift('所有高等法院')
+          }
+          return `${this.searchFields[info[0]].type || ''}: ${simplifyCourts.join(', ')}`
+        }
+        else {
+          return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
+        }
+        
       }
     },
     addHighlighter(fieldName, rawData) {
@@ -225,6 +307,18 @@ export default {
             }
         });
         return obj;
+    },
+    includesAll(arr, values) {
+      return values.every(v => arr.includes(v))
+    },
+    initializeCourt() {
+      this.supremeCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('高等法院'))
+        .map(option => option.name)
+
+      this.districtCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('地方法院'))
+        .map(option => option.name)
     },
     initParams() {
       const urlParams = new URLSearchParams(window.location.search)
@@ -274,6 +368,9 @@ export default {
 </script>
 
 <style>
+.result-page-container {
+  padding: 20px;
+}
 .btn-light-green {
   background-color: #14AE5C !important;
   color: #fff !important;
@@ -289,10 +386,13 @@ export default {
   background-color: #BDE3FF !important;
   border: #97B6CC 1px solid !important;
 }
+.table {
+    margin: 0px !important;
+}
 .table td {
   min-height: 75px;
   height: 75px;
-  padding: 10px 10px 5px 10px !important;
+  padding: 10px 10px 0px 10px !important;
   text-align: justify;
 }
 td > a {
@@ -302,7 +402,6 @@ td > a {
 .custom-adjust-table {
   width: calc( 100% + 2px ) !important;
   transform: translateX(-1px);
-  overflow: scroll;
 }
 
 .mytooltip {
@@ -342,5 +441,16 @@ td > a {
   -webkit-line-clamp: 8;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.pagination-container {
+  padding: 10px 0;
+  max-width: 100vw;
+  overflow: scroll;
+}
+.condition-block {
+  margin: 3px 5px;
+  padding: 3px 5px;
+  background-color: #e7e7e7;
+  border: 1px solid #ccc;
 }
 </style>

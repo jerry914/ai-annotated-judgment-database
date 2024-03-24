@@ -1,15 +1,6 @@
 <template>
   <div class="main-container">
-    <nav class="container md-6">
-      <div class="text-center">
-        <div v-if="$route.path!='/'" class="back-btn">
-          <router-link to="/">回搜尋頁</router-link>
-        </div>
-        <div class="col">
-          <strong>裁判書資訊結構化（涵攝及見解）資料庫 － {{ page_name }}</strong>
-        </div>
-      </div>
-    </nav>
+    <div class="jump-bar" :style="backgroundStyle"></div>
     <router-view/>
   </div>
   <my-footer></my-footer>
@@ -26,12 +17,22 @@ export default {
     return {
       page_name: "搜尋頁面"
     }
+  },
+  computed: {
+    backgroundStyle() {
+      // const imagePath = require('@/assets/裁判觀點檢索平台.png');
+      // const imagePath = require('@/assets/裁判觀點檢索平台2.png');
+      const imagePath = require('@/assets/裁判觀點檢索平台2黑白.png');
+      return {
+        backgroundImage: `url(${imagePath})`
+      };
+    }
   }
 }
 </script>
 <style>
 body {
-  background-color: #fffcf1 !important;
+  background-color: #ffffff !important;
 }
 #app {
   font-family: "Noto Sans TC", sans-serif;
@@ -69,6 +70,22 @@ nav a {
   font-weight: 400 !important;
 }
 .main-container {
-  min-height: calc( 100vh - 120px );
+  min-height: calc( 70vh - 90px );
+}
+.jump-bar {
+  width: 100vw;
+  height: 120px;
+  background-color: #000;
+  background-size: 810px 180px;
+  background-position: 50% -20px;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 920px) {
+  .jump-bar {
+    background-size: contain;
+    background-position: center;
+    height: 80px;
+  }
 }
 </style>

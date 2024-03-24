@@ -5,7 +5,7 @@
       <span>©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</span>
       <div>
         <img src="@/assets/logo_nthu.png" width="200" height="40" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
-        <img src="@/assets/icon.jpg" width="80" height="45" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
+        <img src="@/assets/icon.png" width="80" height="45" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
       </div>
     </div>
   </footer>

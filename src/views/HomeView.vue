@@ -2,29 +2,32 @@
   <div class="container mt-4">
     <el-row>
       <!-- Left column for form inputs -->
-      <el-col :lg="{'span':6,'offset':1}" :md="24">
+      <el-col :lg="{'span':6}" :md="24">
         <form @submit.prevent="onSubmit">
           <!-- Case type input -->
           <!-- Court type select -->
           <div class="form-group">
-            <h6>法院別</h6>
+            <div style="margin: 10px 0"><strong>法院別</strong></div>
             <!-- Checkboxes for court selection -->
-            <div>
-              <input type="checkbox" id="selectAll" v-model="selectAllCourts" @change="selectAllChanged">
-              <label for="selectAll">所有法院</label>
+            <div class="check-court-container">
+              <div>
+                <input type="checkbox" id="selectAll" class="hidden-checkbox" v-model="selectAllCourts" @change="selectAllChanged">
+                <label for="selectAll" class="checkbox-label">所有法院</label>
+              </div>
+              <div>
+                <input type="checkbox" id="selectSupremeCourts" class="hidden-checkbox" v-model="selectSupremeCourts" @change="selectSupremeCourtsChanged">
+                <label for="selectSupremeCourts" class="checkbox-label">所有高等法院</label>
+              </div>
+              <div>
+                <input type="checkbox" id="selectDistrictCourts" class="hidden-checkbox" v-model="selectDistrictCourts" @change="selectDistrictCourtsChanged">
+                <label for="selectDistrictCourts" class="checkbox-label">所有地方法院</label>
+              </div>
             </div>
-            <div>
-              <input type="checkbox" id="selectSupremeCourts" v-model="selectSupremeCourts" @change="selectSupremeCourtsChanged">
-              <label for="selectSupremeCourts">所有高等法院</label>
-            </div>
-            <div>
-              <input type="checkbox" id="selectDistrictCourts" v-model="selectDistrictCourts" @change="selectDistrictCourtsChanged">
-              <label for="selectDistrictCourts">所有地方法院</label>
-            </div>
-
+            
+            <div class="smartphone-message">請點擊下方輸入框以選取法院</div>
             <!-- Court Selection Dropdown -->
             <div>
-              <select class="form-select" multiple style="height: 60vh;overflow:scroll;" v-model="selectedCourts">
+              <select class="form-select select-court-container" multiple v-model="selectedCourts">
                 <option v-for="(item, index) in courtTypeOptions" :key="index">{{ item.name }}</option>
               </select>
             </div>
@@ -33,12 +36,12 @@
           <!-- Referee date input -->
           <div class="form-group">
             <div class="mt-3"><strong>裁判日期</strong></div>
-            <div>
+            <div style="margin: 10px 0;">
               <span class="p-2">起</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.year">
                 <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
-                <option :value="111">111</option>
+                <option :value="110">110</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.month">
@@ -46,12 +49,12 @@
               </select>
               <span>月</span>
             </div>
-            <div>
+            <div style="margin: 10px 0;">
               <span class="p-2">迄</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.year">
                 <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
-                <option :value="111">111</option>
+                <option :value="110">110</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.month">
@@ -62,37 +65,35 @@
           </div>
         </form>
       </el-col>
-      <el-col :lg="{'span':16,'offset':1}" :md="24" style="margin-top: 20px;">
-        <div class="p-0 border rounded-3" style="overflow: hidden;">
-        <table class="table table-bordered custom-adjust-table">
-          <thead class="text-center">
-            <tr>
-              <th style="width: 350px;background-color: #f5f5f5;">搜尋類型</th>
-              <th class="custom-light-purple">請輸入搜尋條件</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(field, index) in formData.searchFields" :key="index">
-              <td style="line-height: 50px;padding-left: 30px !important;background-color: #f5f5f5;">{{ field.type }}</td>
-              <td class="custom-light-purple"><input type="text" class="form-control custom-light-purple" style="height: 50px; background-color: #fff !important;" v-model="field.query" :placeholder="field.example"></td>
-            </tr>
-            <tr>
-              <td style="background-color: #f5f5f5;">
-                <div class="form-check mx-auto" style="width: fit-content;" v-for="option in poolOptions" :key="option.name">
-                  <input class="form-check-input" type="radio" name="flexRadio" :id="option.name" v-model="selectedSearchType" :value="option.name">
-                    <label class="form-check-label" style="text-align: left; margin-left: 10px;" :for="option.name">
-                      {{ option.type }}
-                    </label>
-                </div>
-                <div class="form-instruction">💡此處只能選擇見解，心證，或涵攝其中一項</div>
-              </td>
-              <td class="custom-light-purple"><textarea class="form-control custom-light-purple" style="height: 130px; background-color: #fff !important;" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"/></td>
-            </tr>
-          </tbody>
-        </table>
+      <el-col :lg="{'span':17,'offset':1}" :md="24" style="margin-top: 20px;">
+        <div class="p-0 border rounded-3" style="overflow: scroll;">
+          <div class="flex-container">
+          <div class="flex-row header">
+            <div class="flex-column">搜尋類型</div>
+            <div class="flex-column">請輸入搜尋條件</div>
+          </div>
+          <div class="flex-row" v-for="(field, index) in formData.searchFields" :key="index">
+            <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}</div>
+            <div class="flex-column custom-light-purple">
+              <input type="text" class="form-control" v-model="field.query" :placeholder="field.example">
+            </div>
+          </div>
+          <div class="flex-row">
+            <div class="flex-column radio-group" style="background-color: #f5f5f5;">
+              <div v-for="option in poolOptions" :key="option.name" class="form-check-container">
+                <input class="form-check-input" type="radio" name="flexRadio" :id="option.name" v-model="selectedSearchType" :value="option.name">
+                <label class="form-check-label" :for="option.name">{{ option.type }}</label>
+              </div>
+              <div class="form-instruction">💡此處只能選擇見解，心證，或涵攝其中一項</div>
+            </div>
+            <div class="flex-column custom-light-purple">
+              <textarea class="form-control" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"></textarea>
+            </div>
+          </div>
+        </div>
       </div>
-        <div class="d-flex flex-row-reverse my-5">
-          <button class="btn btn-secondary d-inline-flex custom-purlpe" @click="advanceSearch">進階搜尋條件送出</button>
+        <div class="search-btn-container">
+          <button class="btn btn-secondary d-inline-flex custom-purlpe" @click="advanceSearch">開始搜尋</button>
         </div>
       </el-col>
     </el-row>
@@ -163,6 +164,8 @@ export default {
         { name: '福建金門地方法院', value: 'fjjmdfy' },
         { name: '福建連江地方法院', value: 'fjljdfy' }
       ],
+      supremeCourtValues: [],
+      districtCourtValues: [],
       selectedCourts: [],
       selectAllCourts: false,
       selectSupremeCourts: false,
@@ -171,11 +174,11 @@ export default {
       isSelectedAllCourts: true,
       selectedDateRange: {
         from: {
-          year: '111',
+          year: '110',
           month: '1'
         },
         to: {
-          year: '111',
+          year: '110',
           month: '12'
         },
       },
@@ -183,6 +186,7 @@ export default {
     };
   },
   mounted() {
+    this.initializeCourt()
     this.initializeForm()
   },
   watch: {
@@ -225,7 +229,9 @@ export default {
       deep: true,
     },
     selectedCourts(newVal) {
-      this.selectAllCourts = newVal.length === this.courtTypeOptions.length;
+      this.selectAllCourts = newVal.length === this.courtTypeOptions.length
+      this.selectDistrictCourts = this.includesAll(newVal, this.districtCourtValues)
+      this.selectSupremeCourts = this.includesAll(newVal, this.supremeCourtValues)
     }
   },
   methods: {
@@ -251,6 +257,9 @@ export default {
 
       return `${fromYear}${fromMonth.padStart(2, "0")}01-${toYear}${toMonth.padStart(2, "0")}${lastDate}`;
     },
+    includesAll(arr, values) {
+      return values.every(v => arr.includes(v))
+    },
     selectAllChanged() {
       if (this.selectAllCourts) {
         this.selectedCourts = this.courtTypeOptions.map(option => option.name);
@@ -259,23 +268,26 @@ export default {
       }
     },
     selectSupremeCourtsChanged() {
-      const supremeCourtValues = this.courtTypeOptions
-        .filter(option => option.name.includes('高等法院'))
-        .map(option => option.name);
-      this.updateSelection(this.selectSupremeCourts, supremeCourtValues);
+      this.updateSelection(this.selectSupremeCourts, this.supremeCourtValues)
     },
     selectDistrictCourtsChanged() {
-      const districtCourtValues = this.courtTypeOptions
-        .filter(option => option.name.includes('地方法院'))
-        .map(option => option.name);
-      this.updateSelection(this.selectDistrictCourts, districtCourtValues);
+      this.updateSelection(this.selectDistrictCourts, this.districtCourtValues)
     },
     updateSelection(isSelected, courtValues) {
       if (isSelected) {
-        this.selectedCourts = [...new Set([...this.selectedCourts, ...courtValues])];
+        this.selectedCourts = [...new Set([...this.selectedCourts, ...courtValues])]
       } else {
-        this.selectedCourts = this.selectedCourts.filter(name => !courtValues.includes(name));
+        this.selectedCourts = this.selectedCourts.filter(name => !courtValues.includes(name))
       }
+    },
+    initializeCourt() {
+      this.supremeCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('高等法院'))
+        .map(option => option.name)
+
+      this.districtCourtValues = this.courtTypeOptions
+        .filter(option => option.name.includes('地方法院'))
+        .map(option => option.name)
     },
     initializeForm(){
       this.formData.court_type = this.courtTypeOptions.map(option => option.name).join(' ')
@@ -286,7 +298,6 @@ export default {
     },
     showBootstrapWarning() {
       this.showErrorAlert = true
-      // Optionally, set a timeout to hide the alert after a few seconds
       setTimeout(() => {
         this.showErrorAlert = false;
       }, 5000);
@@ -318,22 +329,40 @@ export default {
 
 
 <style>
+.smartphone-message {
+  display: none;
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #f5c6cb;
+  border-radius: 5px;
+  text-align: center;
+}
+.select-court-container {
+  height: 50vh;
+  overflow:scroll;
+}
 .form-check-input {
   width: 20px !important;
   height: 20px !important;
   border-radius: 24px !important;
+  line-height: 40px;
+}
+.form-check-container {
+  margin: 5px 0;
 }
 .form-check-label {
   width: 250px;
-  line-height: 35px;
   text-align: center;
   cursor: pointer;
 }
 .form-instruction {
-  text-align: center;
-  margin: 5px 10px;
+  text-align: left;
   color: #707070;
   font-size: 0.9em;
+  margin: 5px 0;
+  line-height: 1.5em;
 }
 
 .custom-brightblue{
@@ -362,22 +391,96 @@ export default {
   cursor: pointer;
 }
 
-.dp__main {
-  box-sizing: none;
-  position: relative;
-  width: 60% !important;
-  display: inline-block !important;
+.flex-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
-.table {
-  margin: -1px 0px !important;
-  padding: 0px -1px !important;
+
+.flex-row {
+  display: flex;
+  flex-wrap: wrap;
 }
-.table td {
-  padding: 5px 5px !important;
-  height: fit-content;
+
+.flex-column {
+  flex: 1;
+  line-height: 30px;
+  padding: 10px 30px;
 }
+.header .flex-column {
+  font-weight: bold;
+  background-color: #000;
+  color: #fff;
+}
+
+.form-control {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-check-label {
+  margin-left: 10px;
+  text-align: left;
+}
+.search-btn-container {
+  float: right;
+  padding: 30px 20px;
+}
+@media (max-width: 768px) {
+  .smartphone-message {
+    display: block;
+  }
+  .select-court-container {
+    height: 4rem;
+  }
+  .flex-column {
+    padding: 10px 20px;
+    flex-wrap: wrap;
+    min-width: 200px;
+  }
+
+}
+
+@media (max-width: 768px) {
+  .flex-row {
+    flex-direction: column;
+  }
+}
+
 .dp__input {
   border: none !important;
   background-color: #fff0 !important;
+}
+
+.check-court-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hidden-checkbox {
+  position: absolute;
+  left: -9999px; /* Move it off-screen */
+}
+
+.checkbox-label {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: white;
+  border: 1px solid #454545; /* Optional: to visually denote clickable area */
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.hidden-checkbox:checked + .checkbox-label {
+  background-color: black;
+  color: white;
 }
 </style>
