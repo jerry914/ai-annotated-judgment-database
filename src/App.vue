@@ -73,7 +73,6 @@ nav a {
   min-height: calc( 90vh - 90px );
 }
 .jump-bar {
-  width: 100vw;
   height: 120px;
   background-color: #000;
   background-size: 810px 180px;

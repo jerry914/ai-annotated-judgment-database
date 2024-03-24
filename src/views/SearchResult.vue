@@ -397,7 +397,7 @@ td > a {
   text-align: justify;
 }
 .custom-table-container {
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 .custom-adjust-table {
   width: 100% !important;
