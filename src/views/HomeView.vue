@@ -2,9 +2,8 @@
   <div class="container mt-4">
     
     <el-row>
-      <el-col :span="24"><el-button @click="changeRoute('/about')" style="width: 100%;height: 3em;" type="success">網頁使用說明</el-button></el-col>
       <!-- Left column for form inputs -->
-      <el-col :lg="{'span':6}" :md="24">
+      <el-col :lg="{'span':7}" :md="24">
         <form @submit.prevent="onSubmit">
           <!-- Case type input -->
           <!-- Court type select -->
@@ -67,7 +66,7 @@
           </div>
         </form>
       </el-col>
-      <el-col :lg="{'span':17,'offset':1}" :md="24" style="margin-top: 20px;">
+      <el-col :lg="{'span':16,'offset':1}" :md="24" style="margin-top: 20px;">
         <div class="p-0 border rounded-3">
           <div class="flex-container">
           <div class="flex-row header">
@@ -119,7 +118,7 @@ export default {
         court_type: '',
         refereeDate: '',
         searchFields: [
-          {type: '案件別', name:'case_kind', example: '例如詐欺', query: ''},
+          {type: '案件別', name:'case_type', example: '例如詐欺', query: ''},
           {type: '當事人等基本資料', name:'basic_info', example: '', query: ''},
           {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
           // {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
@@ -137,12 +136,12 @@ export default {
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
         { name: '臺灣高等法院', value: 'twgdfy' },
-        { name: '智慧財產及商業法院', value: 'zhccjsyfy' },
         { name: '臺灣高等法院臺中分院', value: 'twgdfytcfy' },
         { name: '臺灣高等法院臺南分院', value: 'twgdfytnfy' },
         { name: '臺灣高等法院高雄分院', value: 'twgdfykxfy' },
         { name: '臺灣高等法院花蓮分院', value: 'twgdfyhlfy' },
         { name: '福建高等法院金門分院', value: 'fjgdfyjmfy' },
+        { name: '智慧財產及商業法院', value: 'zhccjsyfy' },
         { name: '臺灣臺北地方法院', value: 'twtbdfy' },
         { name: '臺灣新北地方法院', value: 'twxbdfy' },
         { name: '臺灣士林地方法院', value: 'twslgdfy' },
@@ -236,9 +235,6 @@ export default {
     }
   },
   methods: {
-    changeRoute(route){
-      this.$router.push(route)
-    },
     getSelectableYears() {
       return new Date().getFullYear() - 1911
     },
@@ -437,6 +433,22 @@ export default {
   float: right;
   padding: 30px 20px;
 }
+
+
+.check-court-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.checkbox-label {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: white;
+  border: 1px solid #454545; /* Optional: to visually denote clickable area */
+  cursor: pointer;
+  border-radius: 2px;
+}
 @media (max-width: 768px) {
   .smartphone-message {
     display: block;
@@ -449,12 +461,17 @@ export default {
     flex-wrap: wrap;
     min-width: 200px;
   }
-
-}
-
-@media (max-width: 768px) {
   .flex-row {
     flex-direction: column;
+  }
+}
+@media (max-width: 346px) {
+  .check-court-container {
+    flex-wrap: wrap;
+  }
+  .checkbox-label {
+    width: 90vw;
+    text-align: center;
   }
 }
 
@@ -463,25 +480,10 @@ export default {
   background-color: #fff0 !important;
 }
 
-.check-court-container {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
 
 .hidden-checkbox {
   position: absolute;
   left: -9999px; /* Move it off-screen */
-}
-
-.checkbox-label {
-  display: inline-block;
-  padding: 5px 10px;
-  background-color: white;
-  border: 1px solid #454545; /* Optional: to visually denote clickable area */
-  cursor: pointer;
-  border-radius: 2px;
 }
 
 .hidden-checkbox:checked + .checkbox-label {

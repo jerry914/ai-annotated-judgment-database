@@ -1,6 +1,19 @@
 <template>
   <div class="main-container">
     <div class="jump-bar" :style="backgroundStyle"></div>
+    <div class="menu-bar">
+      <ul class="menu">
+        <li class="tab" :class="$route.path=='/'?'active tab':''"><router-link to="/">首頁</router-link></li>
+        <li class="tab" :class="$route.path=='/about'?'active':''"><router-link to="/about">
+          <template v-if="windowWidth < 400">
+            使用說明
+          </template>
+          <template v-else>簡介與使用說明</template>
+        </router-link></li>
+        <li class="tab" :class="$route.path=='/members'?'active':''"><router-link to="/members">開發團隊</router-link></li>
+      </ul>
+    </div>
+
     <router-view/>
   </div>
   <my-footer></my-footer>
@@ -15,8 +28,17 @@ export default {
   },
   data() {
     return {
-      page_name: "搜尋頁面"
+      page_name: "搜尋頁面",
+      windowWidth: window.innerWidth
     }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      window.addEventListener('resize', this.onResize);
+    })
+  },
+  beforeUnmount() { 
+    window.removeEventListener('resize', this.onResize); 
   },
   computed: {
     backgroundStyle() {
@@ -27,7 +49,12 @@ export default {
         backgroundImage: `url(${imagePath})`
       };
     }
-  }
+  },
+  methods: {
+    onResize() {
+      this.windowWidth = window.innerWidth
+    }
+  } 
 }
 </script>
 <style>
@@ -40,7 +67,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #0b0b0b;
 }
-
+.page-title {
+  text-align: center;
+  margin: 30px;
+}
+.intro-title {
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 2rem;
+  margin: 40px 0 20px 0;
+}
 nav {
   margin: 25px;
   padding: 10px;
@@ -70,7 +106,7 @@ nav a {
   font-weight: 400 !important;
 }
 .main-container {
-  min-height: calc( 90vh - 90px );
+  min-height: calc( 100vh - 100px );
 }
 .jump-bar {
   height: 120px;
@@ -87,4 +123,58 @@ nav a {
     height: 80px;
   }
 }
+
+.menu-bar {
+  background-color: #e9eef7; /* Light blue background */
+  display: flex;
+  justify-content: center; /* Center menu items horizontally */
+  padding: 10px 0; /* Padding on top and bottom */
+}
+
+.menu {
+  list-style-type: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  width: 480px;
+}
+
+.menu .tab {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.menu .tab a {
+  display: block;
+  padding: 5px 20px;
+  text-decoration: none;
+  color: #333;
+  background-color: #e9eef7;
+  border-radius: 5px; /* Optional: rounded corners */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+  text-decoration: none !important;
+  width: 160px;
+}
+
+.menu .tab a:hover {
+  background-color: #d1d8e8; /* Lighter blue on hover */
+}
+
+.active a {
+  background-color: #cad2e0 !important; /* Active tab color */
+}
+
+/* RWD: Stacking tabs for smaller screens */
+@media (max-width: 768px) {
+  .menu .tab {
+    flex-basis: 100%; /* Each tab takes full width */
+    margin-bottom: 5px; /* Add space between stacked tabs */
+    width: 100%;
+  }
+  .menu .tab a {
+    padding: 5px 10px;
+    width: 100%;
+  }
+}
+
 </style>

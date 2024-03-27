@@ -1,18 +1,18 @@
 <template>
+    <h2 class="page-title">簡介與使用說明</h2>
 <div class="container mt-4">
-    <el-button @click="changeRoute('/')" type="primary">回搜尋頁</el-button>
     <div class="intro-title">一、系統簡介：</div>
-<p>本系統是國立清華大學人文社會AI應用與發展研究中心為執行AI公共化相關計畫之成果展示。所使用的生成式AI模型是以司法院所公開的刑事案件判決書為訓練資料，讓AI模型自動搜尋並標註出與該案件有關的基本資訊、法官見解、法官心證與法官涵攝的相關文字，免費對外開放，提供法學研究者或需要尋找判決書中特定觀點者使用。本系統的使用與搜尋的方式強調直覺式操作，大部分應無需另行說明使用方式。以下僅就常鍵的操作模式、幾處名詞定義與相關AI技術內容略作說明，減少不必要的誤解。</p>
+<p>本系統是國立清華大學人文社會AI應用與發展研究中心為執行AI公共化相關計畫之成果展示。所使用的生成式AI模型是以司法院所公開的刑事案件判決書為訓練資料，讓AI模型自動搜尋並標註出與該案件有關的基本資訊、法官見解、法官心證與法官涵攝的相關文字，免費對外開放，提供法學研究者或需要尋找判決書中特定觀點者使用。本系統的使用與搜尋的方式強調直覺式操作，大部分應無需另行說明使用方式。以下僅就常見的操作模式、幾處名詞定義與相關AI技術內容略作說明，減少不必要的誤解。</p>
 <div class="intro-title">二、使用方式：</div>
 <ol>
     <li>先於首頁左側欄位點選所需要查詢的判決書範圍，包括法院與日期。</li>
     <li>於右側欄位中選擇要查詢的資料類別(如案件別、當事人基本資料、主文、全文、還是法官的見解、心證或涵攝文字(三選一))，並輸入關鍵字。</li>
     <li>輸入完按右下方「開始搜尋」鍵。</li>
     <li>結果呈現的欄位會依搜尋的內容呈現相關的判決書或資料，依照日期由新往舊排列。見解、心證或涵攝文字超過150字的部分會以「…」截斷。游標移至該文字上方即可出現該段全文。</li>
-    <li>若要進一步查詢判決書原文，可由按號的超連結點入司法院的裁判書系統直接閱讀該篇判決。</li>
+    <li>若要進一步查詢判決書原文，可由案號的超連結點入司法院的裁判書系統直接閱讀該篇判決。</li>
 </ol>
 <div class="intro-title">三、案件別與當事人基本資料的定義</div>
-<p>本系統中的「案件別」是來自緊鄰判決書主文之前的那段文字，是關於此案件的分類方式。由於目前所知此分類方式尚無完全統一的格式，所以此處僅依所擷取到的判決書文字來做蒐尋的對象，不能排除可能有所遺漏或標示不足之處。以圖一為例，即為紅色框中的「傷害案件」。</p>
+<p>本系統中的「案件別」是來自緊鄰判決書主文之前的那段文字，是關於此案件的分類方式。由於目前所知此分類方式尚無完全統一的格式，所以此處僅依所擷取到的判決書文字來做搜尋的對象，不能排除可能有所遺漏或標示不足之處。以圖一為例，即為紅色框中的「傷害案件」。</p>
 <p>本系統所稱的基本資訊是指自判決書第一個字開始到理由項內文以上，通常包含案號、被告、辯護人、自訴人等等資料，如圖一紫色框的範圍。</p>
 <div :style="backgroundStyle" class="insert-img"></div>
 <div class="intro-title">四、見解、心證與涵攝的定義</div>
@@ -38,16 +38,17 @@
     <p>「…證據能力：一、關於違反組織犯罪防制條例之供述證據部分：按組織犯罪防制條例第12條第1項中段規定：「訊問證人之筆錄，以在檢察官或法官面前作成，並經踐行刑事訴訟法所定訊問證人之程序者為限，始得採為證據」，係以立法排除被告以外之人於警詢或檢察事務官調查中所為之陳述，得適用刑事訴訟法第159條之2、第159條之3及第159條之5之規定，是證人於警詢時之陳述，於違反組織犯罪條例案件，即絕對不具有證據能力，自不得採為判決基礎；而上開組織犯罪防制條例第12條第1項之規定，係排除一般證人於警詢陳述之證據能力之特別規定，然被告於警詢之陳述，對被告本身而言，則不在排除之列（最高法院97年度台上字第1727號、102年度台上字第2653號判決意旨參照）。準此，後述被告以外之人於警詢時之陳述，於被告違反組織犯罪防制條例部分，不具證據能力…」</p>
 </div>
 <figure class="table">
-    <table>
+    <div class="responsive-table">
+        <table>
         <tbody>
             <tr>
-                <td style="vertical-align:top;" class="custom-green custom-header">資料類型</td>
-                <td style="vertical-align:top;" class="custom-orange custom-header ">見解資料</td>
-                <td style="vertical-align:top;" class="custom-orange custom-header">心證資料</td>
-                <td style="vertical-align:top;" class="custom-orange custom-header">涵攝資料</td>
+                <td style="vertical-align:top; width: 19%;min-width: 100px;" class="custom-gray custom-header">資料類型</td>
+                <td style="vertical-align:top; width: 27%;min-width: 150px;" class="custom-pink custom-header ">見解資料</td>
+                <td style="vertical-align:top; width: 27%;min-width: 150px;" class="custom-pink custom-header">心證資料</td>
+                <td style="vertical-align:top; width: 27%;min-width: 150px;" class="custom-pink custom-header">涵攝資料</td>
             </tr>
             <tr>
-                <td style="vertical-align:top;" class="custom-green custom-header">
+                <td style="vertical-align:top;" class="custom-gray custom-header">
                     <p>本系統的定義</p>
                 </td>
                 <td style="vertical-align:top;">闡述與案件有關的法律抽象概念，或釐清二個以上抽象概念之間的關聯性之文字說明</td>
@@ -55,13 +56,13 @@
                 <td style="vertical-align:top;">認定或採信特定事實後，詳細說明該事實是否構成法律特定抽象概念的文字說明</td>
             </tr>
             <tr>
-                <td style="vertical-align:top;" class="custom-green custom-header">法學三段推論中的角色</td>
+                <td style="vertical-align:top;" class="custom-gray custom-header">法學三段推論中的角色</td>
                 <td style="vertical-align:top;">對大前提(抽象規範)的討論</td>
                 <td style="vertical-align:top;">對小前提(具體事實)的認定過程</td>
                 <td style="vertical-align:top;">說明認定的事實是否符合特定概念的理由。</td>
             </tr>
             <tr>
-                <td style="vertical-align:top;" class="custom-green custom-header">
+                <td style="vertical-align:top;" class="custom-gray custom-header">
                     <p>舉例文字</p>
                     <p>(以刑法第320條第一項竊盜罪為例：意圖為自己或第三人不法之所有，而竊取他人之動產者，為竊盜罪，處五年以下有期徒刑、拘役或五十萬元以下罰金。)</p>
                 </td>
@@ -75,6 +76,8 @@
             </tr>
         </tbody>
     </table>
+    </div>
+    
 </figure>
 <p>表一：本系統中的見解、心證與涵攝資料間的比較，對照法學三段推論的不同階段與類似的文字舉例。此處考慮空間的緣故而濃縮舉例文字。附註有判決書中實例文字與其上下文關係供使用者參考。</p>
 <div class="intro-title">五、資料來源與預處理</div>
@@ -110,22 +113,11 @@ export default {
         backgroundImage: `url(${imagePath})`
       };
     }
-  },
-  methods: {
-    changeRoute(route){
-        this.$router.push(route)
-        }
-    }   
+  }  
 }
 </script>
 
 <style scoped>
-.intro-title {
-    font-size: 1.75rem;
-    font-weight: 500;
-    line-height: 1.2rem;
-    margin: 40px 0 20px 0;
-}
 .DF-font {
     font-family: "DFKai-sb", "Noto Sans TC", sans-serif;
     font-weight: 600;
@@ -137,11 +129,28 @@ export default {
     background-repeat: no-repeat;
     margin: auto;
 }
+.responsive-table {
+    overflow-x: auto; /* Enables horizontal scrolling for smaller devices */
+}
+
 @media (max-width: 768px) {
     .insert-img {
         width: 95%;
         margin: auto;
     }
+}
+@media (max-width: 525px) {
+    .insert-img {
+        width: 95%;
+        margin: auto;
+        height: calc( 95vw / 1.4)
+    }
+}
+.custom-gray {
+  background-color: #ebdfdf !important;
+}
+.custom-pink {
+  background-color: #fdc7d4 !important;
 }
 .custom-orange {
   background-color: #f7ec89 !important;

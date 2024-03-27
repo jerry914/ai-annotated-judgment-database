@@ -1,9 +1,9 @@
 <template>
   <footer class="footer">
     <div class="container">
-      <span>聯絡我們：custodyprediction@gmail.com</span>
+      <span>聯絡我們：aifr.general@gmail.com</span>
       <span>©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</span>
-      <div>
+      <div class="icon-container">
         <img src="@/assets/logo_nthu.png" width="200" height="40" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
         <img src="@/assets/icon.png" width="80" height="45" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
       </div>
@@ -60,5 +60,9 @@ export default {
 
 .align-top {
   vertical-align: top;
+}
+.icon-container {
+  display: flex;
+  justify-content: space-around;
 }
 </style>

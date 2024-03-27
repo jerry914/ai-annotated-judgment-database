@@ -1,7 +1,6 @@
 <template>
   <div class="container result-page-container" v-loading="loading">
     <!-- First Row: Search Query and Statistical Results -->
-    <el-button @click="changeRoute('/')" type="primary" style="width: 100px;margin-bottom: 10px;">回搜尋頁</el-button>
     <div class="row">
       <div class="col-md-9">
         
@@ -53,7 +52,7 @@
                   <template v-if="field.name == 'case_num'">
                     <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
                   </template>
-                  <template v-if="field.name == 'jud_date'">
+                  <template v-else-if="field.name == 'jud_date'">
                     {{ formatDate(item['jud_date']) }}
                   </template>
                   <template v-else>
@@ -176,9 +175,6 @@ export default {
     this.fetchData()
   },
   methods: {
-    changeRoute(route){
-      this.$router.push(route)
-    },
     getColumnWidth(name) {
       if (name == 'basic_info') {
         return 'min-width: 260px;'
@@ -340,7 +336,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('http://140.114.80.195:6128/api/search', {
+        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
@@ -363,7 +359,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .result-page-container {
   padding: 20px;
   overflow-x: hidden;
