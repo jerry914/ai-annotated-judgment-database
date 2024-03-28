@@ -337,7 +337,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
+        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
