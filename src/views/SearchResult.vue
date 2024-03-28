@@ -320,6 +320,7 @@ export default {
         'page': 1,
         'size': this.pageDetial.size,
         'court_type': urlParams.get('court_type') || '', 
+        'case_type': urlParams.get('case_type') || '',
         'jud_date': urlParams.get('jud_date') || '', 
         'basic_info': urlParams.get('basic_info') || '', 
         'syllabus': urlParams.get('syllabus') || '', 
