@@ -284,7 +284,7 @@ export default {
       let result = rawData
       if(keywords) {
         keywords.split(" ").forEach((keyword) => {
-        result = result.replace(keyword,`<span class="highlighter">${keyword}</span>`)
+        result = result.replace(keyword,`<span class="highlighter-my">${keyword}</span>`)
       })
       }
       result = result.replace(/\n+/g, '<br>')
@@ -337,7 +337,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
+        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
@@ -359,6 +359,15 @@ export default {
   }
 };
 </script>
+
+<style>
+.tooltiptext .highlighter-my {
+  background-color: rgb(170, 116, 8);
+}
+.highlighter-my {
+  background-color: yellow;
+}
+</style>
 
 <style scoped>
 .result-page-container {
@@ -423,12 +432,7 @@ td > a {
 .mytooltip:hover .tooltiptext {
   visibility: visible;
 }
-.tooltiptext .highlighter {
-  background-color: rgb(170, 116, 8);
-}
-.highlighter {
-  background-color: yellow;
-}
+
 .no-found-cell {
   background-color: #fff;
   text-align: center;
