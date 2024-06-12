@@ -74,21 +74,13 @@
             <div class="flex-column">請輸入搜尋條件</div>
           </div>
           <div class="flex-row" v-for="(field, index) in formData.searchFields" :key="index">
-            <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}</div>
+            <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}
+              <div v-if="field.name=='jud_full'" class="form-instruction">
+              ( 註：關於見解/心證/涵攝的定義，請見「簡介與使用說明」。搜尋後的結果將會分開呈現。)
+              </div>
+            </div>
             <div class="flex-column custom-light-purple">
               <input type="text" class="form-control" v-model="field.query" :placeholder="field.example">
-            </div>
-          </div>
-          <div class="flex-row">
-            <div class="flex-column radio-group" style="background-color: #f5f5f5;">
-              <div v-for="option in poolOptions" :key="option.name" class="form-check-container">
-                <input class="form-check-input" type="radio" name="flexRadio" :id="option.name" v-model="selectedSearchType" :value="option.name">
-                <label class="form-check-label" :for="option.name">{{ option.type }}</label>
-              </div>
-              <div class="form-instruction">💡此處只能選擇見解，心證，或涵攝其中一項</div>
-            </div>
-            <div class="flex-column custom-light-purple">
-              <textarea class="form-control" v-model="poolOptions[selectedSearchType].query" :placeholder="poolOptions[selectedSearchType].example"></textarea>
             </div>
           </div>
         </div>
@@ -98,10 +90,6 @@
         </div>
       </el-col>
     </el-row>
-
-    <div v-if="showErrorAlert" class="alert alert-danger mt-2" role="alert">
-      無法同時選擇一項以上的涵攝，見解，或心證，請修改後送出。
-    </div>
   </div>
 </template>
 
@@ -118,16 +106,16 @@ export default {
         court_type: '',
         refereeDate: '',
         searchFields: [
-          {type: '案件別', name:'case_type', example: '例如詐欺', query: ''},
-          {type: '當事人等基本資料', name:'basic_info', example: '', query: ''},
-          {type: '主文中的關鍵字', name:'syllabus', example: '', query: ''},
+          {type: '案件別', name:'case_type', example: '例如詐欺', query: '', required: false},
+          {type: '當事人等基本資料', name:'basic_info', example: '', query: '', required: false},
+          {type: '主文中的關鍵字', name:'syllabus', example: '', query: '', required: false},
+          {type: '刑事判決書的見解/心證/涵攝關鍵字(必填)', name:'jud_full', example: '', query: '', required: true},
           // {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
           // {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
           // {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
-          {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
+          // {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
         ],
       },
-      selectedSearchType: 'opinion',
       poolOptions: {
         opinion: {type: '法院見解的關鍵字', name: 'opinion', query: '', example: '請輸入法院見解的關鍵字'},
         fee:  {type: '法官心證的關鍵字(限地院)', name: 'fee', query: '', example: '請輸入法官心證的關鍵字(限地院)'},
@@ -182,8 +170,7 @@ export default {
           year: '110',
           month: '12'
         },
-      },
-      showErrorAlert: false
+      }
     };
   },
   mounted() {
@@ -232,9 +219,29 @@ export default {
       this.selectAllCourts = newVal.length === this.courtTypeOptions.length
       this.selectDistrictCourts = this.includesAll(newVal, this.districtCourtValues)
       this.selectSupremeCourts = this.includesAll(newVal, this.supremeCourtValues)
+    },
+    'formData': {
+      handler(newFields) {
+        console.log(newFields)
+        localStorage.setItem('formData', JSON.stringify(newFields));
+      },
+      deep: true
     }
   },
+  created() {
+    const storedFields = localStorage.getItem('formData');
+    if (storedFields) {
+      this.formData = JSON.parse(storedFields);
+    }
+    window.addEventListener('beforeunload', this.clearLocalStorage);
+  },
+  beforeUnmount() {
+    window.removeEventListener('beforeunload', this.clearLocalStorage);
+  },
   methods: {
+    clearLocalStorage() {
+      localStorage.removeItem('formData');
+    },
     getSelectableYears() {
       return new Date().getFullYear() - 1911
     },
@@ -296,14 +303,27 @@ export default {
       // TODO: Implement your submission logic here
       console.log('Submitted', this.formData)
     },
-    showBootstrapWarning() {
-      this.showErrorAlert = true
-      setTimeout(() => {
-        this.showErrorAlert = false;
-      }, 5000);
-    },
     advanceSearch() {
       let queryParams = {}
+      let allFieldsValid = true;
+
+      // Loop through searchFields and add to queryParams
+      this.formData.searchFields.forEach((field) => {
+        if (field.required && field.query === '') {
+          this.$message({
+            message: '請輸入刑事判決書的見解/心證/涵攝關鍵字',
+            type: 'warning'
+          })
+          allFieldsValid = false;
+        } else {
+          queryParams[field.name] = field.query
+        }
+      });
+
+      // Stop execution if any required field is empty
+      if (!allFieldsValid) {
+        return;
+      }
 
       // Add courtType and refereeDate to queryParams
       this.formData.court_type = this.selectedCourts.join(' ')
@@ -311,19 +331,10 @@ export default {
       queryParams.court_type = this.formData.court_type
       queryParams.jud_date = this.formData.refereeDate
 
-      // Loop through searchFields and add to queryParams
-      this.formData.searchFields.forEach((field) => {
-        queryParams[field.name] = field.query
-      });
-
-      if(this.selectedSearchType != '') {
-        queryParams[this.selectedSearchType] = this.poolOptions[this.selectedSearchType].query
-      }
-      
       // Use Vue Router to navigate with constructed query parameters
       this.$router.push({ path: '/search-result', query: queryParams })
-    },
-  },
+    }
+  }
 }
 </script>
 
@@ -360,9 +371,9 @@ export default {
 }
 .form-instruction {
   text-align: left;
-  color: #707070;
+  color: #e15151;
+  background-color: rgb(245, 245, 245);
   font-size: 0.9em;
-  margin: 5px 0;
   line-height: 1.5em;
 }
 
