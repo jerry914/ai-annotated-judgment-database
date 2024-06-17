@@ -75,7 +75,7 @@
           </div>
           <div class="flex-row" v-for="(field, index) in formData.searchFields" :key="index">
             <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}
-              <div v-if="field.name=='jud_full'" class="form-instruction">
+              <div v-if="field.name=='prediction'" class="form-instruction">
               ( 註：關於見解/心證/涵攝的定義，請見「簡介與使用說明」。搜尋後的結果將會分開呈現。)
               </div>
             </div>
@@ -109,17 +109,12 @@ export default {
           {type: '案件別', name:'case_type', example: '例如詐欺', query: '', required: false},
           {type: '當事人等基本資料', name:'basic_info', example: '', query: '', required: false},
           {type: '主文中的關鍵字', name:'syllabus', example: '', query: '', required: false},
-          {type: '刑事判決書的見解/心證/涵攝關鍵字(必填)', name:'jud_full', example: '', query: '', required: true},
+          {type: '刑事判決書的見解/心證/涵攝關鍵字(必填)', name:'prediction', example: '', query: '', required: true},
           // {type: '法院見解的關鍵字', name:'opinion', example: '', query: ''},
           // {type: '法官心證的關鍵字(限地院)', name:'fee', example: '', query: ''},
           // {type: '法官涵攝的關鍵字(限地院)', name:'sub', example: '', query: ''},
           // {type: '判決全文的關鍵字', name:'jud_full', example: '', query: ''},
         ],
-      },
-      poolOptions: {
-        opinion: {type: '法院見解的關鍵字', name: 'opinion', query: '', example: '請輸入法院見解的關鍵字'},
-        fee:  {type: '法官心證的關鍵字(限地院)', name: 'fee', query: '', example: '請輸入法官心證的關鍵字(限地院)'},
-        sub: {type: '法官涵攝的關鍵字(限地院)', name: 'sub', query: '', example: '請輸入法官涵攝的關鍵字(限地院)'}
       },
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
@@ -222,7 +217,6 @@ export default {
     },
     'formData': {
       handler(newFields) {
-        console.log(newFields)
         localStorage.setItem('formData', JSON.stringify(newFields));
       },
       deep: true

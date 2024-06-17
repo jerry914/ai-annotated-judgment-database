@@ -13,6 +13,15 @@
       </div>
       <div class="col-md-3">
         <div class="fw-bolder my-1 py-1">查詢結果</div>
+        <div>
+          <el-radio-group v-model="prediction_name" size="large">
+            <el-radio-button
+              v-for="pred in pred_options"
+              :key="pred.value"
+              :label="pred.name"
+            ></el-radio-button>
+          </el-radio-group>
+        </div>
         <div v-for="count in resultCount" :key="count.name">
           <template v-if="count.count!=0">
             共計 <strong class="text-decoration-underline">{{ count.count }}</strong> {{ count.unit }}{{ count.name }}
@@ -44,8 +53,8 @@
               </template>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="(item, index) in searchResults" :key="index">
+          <tbody v-if="searchResults[prediction_type]">
+            <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
               <td style="text-align: center;">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
               <template v-for="field in searchFields" :key="field.name" >
                 <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
@@ -98,7 +107,7 @@
 
 <script>
 import axios from 'axios'
-// import testSearchResults from '../../data/api_search.json'
+// import testSearchResults from '../../data/prediction_殺人.json'
 
 export default {
   data() {
@@ -115,7 +124,6 @@ export default {
         opinion: {type: '見解', name:'opinion'},
         fee: {type: '心證', name:'fee'},
         sub: {type: '涵攝', name:'sub'},
-        jud_full: {type: '全文關鍵字', name:'jud_full'},
       },
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
@@ -156,16 +164,32 @@ export default {
       pageDetial: {
         "page": 1,
         "size": 10,
-        "next_page_url": "null",
-        "previous_page_url": "null",
-        "total_pages": 8,
-        "total": 15
+        "next_page_url": null,
+        "previous_page_url": null,
+        "total_pages": null,
+        "total": null
       },
       conditionInfo: [
       ],
       maxTextLength: 250,
       dialogVisible: false,
-      dialogText: ''
+      dialogText: '',
+      prediction_type: '',
+      prediction_name: '',
+      pred_options: [
+        {
+          value: 'sub',
+          name: '涵攝'
+        },
+        {
+          value: 'opinion',
+          name: '見解'
+        },
+        {
+          value: 'fee',
+          name: '心證'
+        }
+      ]
     };
   },
   created() {
@@ -173,6 +197,17 @@ export default {
     this.initParams()
     this.initializeCourt()
     this.fetchData()
+  },
+  watch: {
+    prediction_name(newName) {
+      const selectedOption = this.pred_options.find(pred => pred.name === newName);
+      this.prediction_type = selectedOption ? selectedOption.value : '';
+    },
+    prediction_type(newValue) {
+      this.conditionInfo = this.searchResults[newValue].condition_info.available;
+      this.pageDetial = this.searchResults[newValue].meta;
+      this.resultCount = this.searchResults[newValue].summary;
+    }
   },
   methods: {
     getColumnWidth(name) {
@@ -201,8 +236,8 @@ export default {
       if (name == 'court_type') {
         return false
       }
-      if (name == 'opinion' ||  name === 'fee' || name === 'sub' || name == 'jud_full') {
-        if (this.params[name]) {
+      if (name == 'opinion' || name == 'fee' || name == 'sub') {
+        if (this.prediction_type == name) {
           return true
         }
       }
@@ -324,10 +359,7 @@ export default {
         'jud_date': urlParams.get('jud_date') || '', 
         'basic_info': urlParams.get('basic_info') || '', 
         'syllabus': urlParams.get('syllabus') || '', 
-        'opinion': urlParams.get('opinion') || '', 
-        'fee': urlParams.get('fee') || '', 
-        'sub': urlParams.get('sub') || '', 
-        'jud_full': urlParams.get('jud_full') || ''
+        'prediction': urlParams.get('prediction') || ''
       }
       this.params = this.removeEmptyStringValues(this.params)
       // console.log(this.params)
@@ -337,7 +369,7 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
+        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
           headers: {
             "ngrok-skip-browser-warning": "69420"
           },
@@ -345,11 +377,15 @@ export default {
         });
         // const apiResponse = testSearchResults
         const apiResponse = response.data
-        // console.log(apiResponse)
-        this.searchResults = apiResponse.data
-        this.conditionInfo = apiResponse.condition_info.available
-        this.pageDetial = apiResponse.meta
-        this.resultCount = apiResponse.summary
+        console.log(apiResponse)
+        this.searchResults = apiResponse
+
+        this.prediction_type = this.searchResults.sub ? 'sub' :
+                      this.searchResults.opinion ? 'opinion' : 
+                      'fee';
+        this.prediction_name = this.searchResults.sub ? '涵攝' :
+                      this.searchResults.opinion ? '見解' : 
+                      '心證';
         this.loading = false
       } catch (error) {
         console.error('There was an error!', error)
