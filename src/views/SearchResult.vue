@@ -12,20 +12,18 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="fw-bolder my-1 py-1">查詢結果</div>
+        <div class="fw-bolder my-1 py-1">查詢結果(最多顯示近期的100筆資料)</div>
         <div>
           <el-radio-group v-model="prediction_name" size="large">
-            <el-radio-button
-              v-for="pred in pred_options"
+            <el-radio
+              v-for="(pred, i) in pred_options"
               :key="pred.value"
-              :label="pred.name"
-            ></el-radio-button>
+              :label="pred.name" border
+              style="margin: 5px 0;"
+            >
+            <div>{{ pred.name }} {{ resultCount[i] }}</div>
+          </el-radio>
           </el-radio-group>
-        </div>
-        <div v-for="count in resultCount" :key="count.name">
-          <template v-if="count.count!=0">
-            共計 <strong class="text-decoration-underline">{{ count.count }}</strong> {{ count.unit }}{{ count.name }}
-          </template>
         </div>
       </div>
     </div>
@@ -178,16 +176,16 @@ export default {
       prediction_name: '',
       pred_options: [
         {
-          value: 'sub',
-          name: '涵攝'
-        },
-        {
           value: 'opinion',
           name: '見解'
         },
         {
           value: 'fee',
           name: '心證'
+        },
+        {
+          value: 'sub',
+          name: '涵攝'
         }
       ]
     };
@@ -206,7 +204,6 @@ export default {
     prediction_type(newValue) {
       this.conditionInfo = this.searchResults[newValue].condition_info.available;
       this.pageDetial = this.searchResults[newValue].meta;
-      this.resultCount = this.searchResults[newValue].summary;
     }
   },
   methods: {
@@ -377,20 +374,34 @@ export default {
         });
         // const apiResponse = testSearchResults
         const apiResponse = response.data
-        console.log(apiResponse)
+        // console.log(apiResponse)
         this.searchResults = apiResponse
 
-        this.prediction_type = this.searchResults.sub ? 'sub' :
-                      this.searchResults.opinion ? 'opinion' : 
-                      'fee';
-        this.prediction_name = this.searchResults.sub ? '涵攝' :
-                      this.searchResults.opinion ? '見解' : 
-                      '心證';
+        this.prediction_type = this.searchResults.opinion ? 'opinion' :
+                      this.searchResults.fee ? 'fee' : 
+                      'sub';
+        this.prediction_name = this.searchResults.opinion ? '見解' :
+                      this.searchResults.fee ? '心證' : 
+                      '涵攝';
+        
+        this.resultCount.push(this.getCountByName('opinion', '見解'))
+        this.resultCount.push(this.getCountByName('fee', '心證'))
+        this.resultCount.push(this.getCountByName('sub', '涵攝'))
+        
         this.loading = false
       } catch (error) {
         console.error('There was an error!', error)
         this.loading = false
       }
+    },
+    getCountByName(type, name) {
+        const item = this.searchResults[type].summary.find(entry => entry.name === name);
+        let jud_count = this.searchResults[type].summary[0].count;
+        if (item && jud_count) {
+            return `共計 ${item.count} 筆 從 ${jud_count} 篇裁判書`;
+        } else {
+            return null;
+        }
     }
   }
 };

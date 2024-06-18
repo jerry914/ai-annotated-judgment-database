@@ -41,8 +41,7 @@
               <span class="p-2">起</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.year">
-                <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
-                <option :value="110">110</option>
+                <option v-for="year in getSelectableYears()" :value="parseInt(defaultDateRange.from.year)+year-1" :key="parseInt(defaultDateRange.from.year)+year-1">{{ parseInt(defaultDateRange.from.year)+year-1 }}</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.from.month">
@@ -54,8 +53,7 @@
               <span class="p-2">迄</span>
               <span>民國</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.year">
-                <!-- <option v-for="year in getSelectableYears()" :value="year" :key="year">{{ year }}</option> -->
-                <option :value="110">110</option>
+                <option v-for="year in getSelectableYears()" :value="parseInt(defaultDateRange.from.year)+year-1" :key="parseInt(defaultDateRange.from.year)+year-1">{{ parseInt(defaultDateRange.from.year)+year-1 }}</option>
               </select>
               <span>年</span>
               <select class="form-select form-select-sm" style="width: fit-content;display: inline;" v-model="selectedDateRange.to.month">
@@ -76,7 +74,7 @@
           <div class="flex-row" v-for="(field, index) in formData.searchFields" :key="index">
             <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}
               <div v-if="field.name=='prediction'" class="form-instruction">
-              ( 註：關於見解/心證/涵攝的定義，請見「簡介與使用說明」。搜尋後的結果將會分開呈現。)
+              ( 註：關於見解/心證/涵攝的定義，請見「<a href="/about">簡介與使用說明</a>」。搜尋後的結果將會分開呈現。關鍵字若有兩個以上，請以空格分開。)
               </div>
             </div>
             <div class="flex-column custom-light-purple">
@@ -106,7 +104,7 @@ export default {
         court_type: '',
         refereeDate: '',
         searchFields: [
-          {type: '案件別', name:'case_type', example: '例如詐欺', query: '', required: false},
+          {type: '案件別', name:'case_type', example: '例如：詐欺', query: '', required: false},
           {type: '當事人等基本資料', name:'basic_info', example: '', query: '', required: false},
           {type: '主文中的關鍵字', name:'syllabus', example: '', query: '', required: false},
           {type: '刑事判決書的見解/心證/涵攝關鍵字(必填)', name:'prediction', example: '', query: '', required: true},
@@ -156,9 +154,19 @@ export default {
       selectDistrictCourts: false,
       showModal: false,
       isSelectedAllCourts: true,
+      defaultDateRange: {
+        from: {
+          year: '106',
+          month: '1'
+        },
+        to: {
+          year: '110',
+          month: '12'
+        },
+      },
       selectedDateRange: {
         from: {
-          year: '110',
+          year: '106',
           month: '1'
         },
         to: {
@@ -237,7 +245,7 @@ export default {
       localStorage.removeItem('formData');
     },
     getSelectableYears() {
-      return new Date().getFullYear() - 1911
+      return this.defaultDateRange.to.year - this.defaultDateRange.from.year + 1
     },
     formatPart(value) {
       return String(value).padStart(2, '0')
