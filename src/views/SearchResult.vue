@@ -104,8 +104,8 @@
 </template>
 
 <script>
-import axios from 'axios'
-// import testSearchResults from '../../data/prediction_殺人.json'
+// import axios from 'axios'
+import testSearchResults from '../../data/prediction_殺人.json'
 
 export default {
   data() {
@@ -119,6 +119,7 @@ export default {
         jud_date: {type: '日期', name: 'jud_date'},
         case_type: {type: '案件別', name:'case_type'},
         basic_info: {type: '當事人等基本資料', name:'basic_info'},
+        syllabus: {type: '主文段落', name: 'syllabus'},
         opinion: {type: '見解', name:'opinion'},
         fee: {type: '心證', name:'fee'},
         sub: {type: '涵攝', name:'sub'},
@@ -231,6 +232,9 @@ export default {
     },
     checkQueryEnable(name) {
       if (name == 'court_type') {
+        return false
+      }
+      if (name == 'basic_info' && !this.params.basic_info) {
         return false
       }
       if (name == 'opinion' || name == 'fee' || name == 'sub') {
@@ -366,15 +370,15 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
-          headers: {
-            "ngrok-skip-browser-warning": "69420"
-          },
-          params: this.params
-        });
-        // const apiResponse = testSearchResults
-        const apiResponse = response.data
-        // console.log(apiResponse)
+        // const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
+        //   headers: {
+        //     "ngrok-skip-browser-warning": "69420"
+        //   },
+        //   params: this.params
+        // });
+        const apiResponse = testSearchResults
+        // const apiResponse = response.data
+        console.log(apiResponse)
         this.searchResults = apiResponse
 
         this.prediction_type = this.searchResults.opinion ? 'opinion' :
