@@ -2,7 +2,7 @@
   <div class="container result-page-container" v-loading="loading">
     <!-- First Row: Search Query and Statistical Results -->
     <div class="row">
-      <div class="col-md-9">
+      <div class="col-md-8">
         
         <div class="fw-bolder my-1 py-1">搜尋條件</div>
         <div>
@@ -11,7 +11,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="fw-bolder my-1 py-1">查詢結果(最多顯示近期的100筆資料)</div>
         <div>
           <el-radio-group v-model="prediction_name" size="large">
@@ -31,8 +31,10 @@
     <div class="custom-table-container">
       <div class="pagination-container">
         <el-pagination
+          class="custom-pagination"
           :current-page="pageDetial.page"
           :page-size="pageDetial.size"
+          :pager-count="4"
           :page-sizes="[10, 50, 100]"
           :total="pageDetial.total"
           background
@@ -42,42 +44,43 @@
         />
         </div>
       <!-- 裁判資訊 Table -->
-        <table class="table table-bordered custom-adjust-table">
-          <thead>
-            <tr class="text-center">
-              <th class="custom-blue">序號</th>
-              <template v-for="field in searchFields" :key="field.name">
-                <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
-              </template>
-            </tr>
-          </thead>
-          <tbody v-if="searchResults[prediction_type]">
-            <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
-              <td style="text-align: center;">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
-              <template v-for="field in searchFields" :key="field.name" >
-                <td v-if="checkQueryEnable(field.name)" :style="getColumnWidth(field.name)">
-                  <template v-if="field.name == 'case_num'">
-                    <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
-                  </template>
-                  <template v-else-if="field.name == 'jud_date'">
-                    {{ formatDate(item['jud_date']) }}
-                  </template>
-                  <template v-else>
-                    <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
-                    <p v-else-if="(item[field.name].length > maxTextLength || (item[field.name].match(/\n/g) || []).length > 5)" class="mytooltip custom-overflow-column" @click="openDialog(addHighlighter(field.name, item[field.name]))">
-                      <span  v-html="addHighlighter(field.name, item[field.name].substr(0,250))"></span>...more
-                      <span class="tooltiptext">點擊閱讀全文</span>
-                    </p>
-                    <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
-                  </template>
+      <table class="table table-bordered custom-adjust-table">
+        <thead>
+          <tr class="text-center">
+            <th class="custom-blue">序號</th>
+            <template v-for="field in searchFields" :key="field.name">
+              <th class="custom-blue" v-if="checkQueryEnable(field.name)">{{ field.type }}</th>
+            </template>
+          </tr>
+        </thead>
+        <tbody v-if="searchResults[prediction_type]">
+          <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
+            <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
+            <template v-for="field in searchFields" :key="field.name" >
+              <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
+                <template v-if="field.name == 'case_num'">
+                  <a :href="item['jud_url']" target="_blank">{{ item['case_num'] }}</a>
+                </template>
+                <template v-else-if="field.name == 'jud_date'">
+                  {{ formatDate(item['jud_date']) }}
+                </template>
+                <template v-else>
+                  <p style="color:rgb(138, 138, 138);" v-if="item[field.name] == null">無</p>
+                  <p v-else-if="(item[field.name].length > maxTextLength || (item[field.name].match(/\n/g) || []).length > 5)" class="mytooltip custom-overflow-column" @click="openDialog(addHighlighter(field.name, item[field.name]))">
+                    <span  v-html="addHighlighter(field.name, item[field.name].substr(0,250))"></span>...more
+                    <span class="tooltiptext">點擊閱讀全文</span>
+                  </p>
+                  <p v-else v-html="addHighlighter(field.name, item[field.name])"></p>
+                </template>
               </td>
-              </template>
-            </tr>
-            <tr v-if="searchResults.length == 0">
-              <td class="no-found-cell" colspan="8">查無資料
-              </td></tr>
-          </tbody>
-        </table>
+            </template>
+          </tr>
+          <tr v-if="searchResults.length == 0">
+            <td class="no-found-cell" colspan="8">查無資料
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <el-dialog
         v-model="dialogVisible"
         width="60%"
@@ -89,8 +92,10 @@
 
       <div class="pagination-container">
         <el-pagination
+          class="custom-pagination"
           :current-page="pageDetial.page"
           :page-size="pageDetial.size"
+          :pager-count="4"
           :page-sizes="[10, 50, 100]"
           :total="pageDetial.total"
           background
@@ -104,8 +109,8 @@
 </template>
 
 <script>
-// import axios from 'axios'
-import testSearchResults from '../../data/prediction_殺人.json'
+import axios from 'axios'
+// import testSearchResults from '../../data/prediction_殺人.json'
 
 export default {
   data() {
@@ -119,7 +124,7 @@ export default {
         jud_date: {type: '日期', name: 'jud_date'},
         case_type: {type: '案件別', name:'case_type'},
         basic_info: {type: '當事人等基本資料', name:'basic_info'},
-        syllabus: {type: '主文段落', name: 'syllabus'},
+        syllabus: {type: '主文', name: 'syllabus'},
         opinion: {type: '見解', name:'opinion'},
         fee: {type: '心證', name:'fee'},
         sub: {type: '涵攝', name:'sub'},
@@ -220,6 +225,9 @@ export default {
       }
       else if (name == 'case_num') {
         return 'min-width: 90px;'
+      }
+      else if (name == 'syllabus') {
+        return 'min-width: 125px;'
       }
       return 'min-width: 200px;'
     },
@@ -370,23 +378,25 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        // const response = await axios.get('https://namely-fast-ocelot.ngrok-free.app/api/search', {
-        //   headers: {
-        //     "ngrok-skip-browser-warning": "69420"
-        //   },
-        //   params: this.params
-        // });
-        const apiResponse = testSearchResults
-        // const apiResponse = response.data
-        console.log(apiResponse)
+        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
+          headers: {
+            "ngrok-skip-browser-warning": "69420"
+          },
+          params: this.params
+        });
+        // const apiResponse = testSearchResults
+        const apiResponse = response.data
+        // console.log(apiResponse)
         this.searchResults = apiResponse
 
-        this.prediction_type = this.searchResults.opinion ? 'opinion' :
-                      this.searchResults.fee ? 'fee' : 
-                      'sub';
-        this.prediction_name = this.searchResults.opinion ? '見解' :
-                      this.searchResults.fee ? '心證' : 
-                      '涵攝';
+        if (!this.prediction_type) {
+          this.prediction_type = this.searchResults.opinion ? 'opinion' :
+                        this.searchResults.fee ? 'fee' : 
+                        'sub';
+          this.prediction_name = this.searchResults.opinion ? '見解' :
+                        this.searchResults.fee ? '心證' : 
+                        '涵攝';
+        }
         
         this.resultCount.push(this.getCountByName('opinion', '見解'))
         this.resultCount.push(this.getCountByName('fee', '心證'))
@@ -418,13 +428,35 @@ export default {
 .highlighter-my {
   background-color: yellow;
 }
+.custom-pagination .el-pagination {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .custom-pagination .el-pagination {
+    font-size: 12px;
+  }
+
+  .custom-pagination .el-pagination .el-pager li {
+    padding: 0 4px;
+    min-width: 22px;
+  }
+
+  .custom-pagination .el-pagination__sizes,
+  .custom-pagination .el-pagination__total {
+    display: none;
+  }
+
+  .custom-pagination .el-pagination__prev,
+  .custom-pagination .el-pagination__next {
+    padding: 0 6px;
+  }
+}
+
 </style>
 
 <style scoped>
-.result-page-container {
-  padding: 20px;
-  overflow-x: hidden;
-}
 .btn-light-green {
   background-color: #14AE5C !important;
   color: #fff !important;
@@ -443,23 +475,41 @@ export default {
 .table {
     margin: 0px !important;
 }
-.table td {
-  min-height: 75px;
-  height: 75px;
-  padding: 10px 10px 0px 10px !important;
-  text-align: justify;
+
+@media (max-width: 768px) {
+  .custom-adjust-table, .custom-adjust-table thead, .custom-adjust-table tbody, .custom-adjust-table th, .custom-adjust-table td, .custom-adjust-table tr {
+    display: block;
+  }
+
+  .custom-adjust-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .custom-adjust-table tr { border: 1px solid #ccc; }
+
+  .custom-adjust-table td {
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 25%;
+    text-align: left;
+  }
+
+  .custom-adjust-table td:before {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    content: attr(data-label);
+    font-weight: bold;
+    text-align: left;
+  }
 }
-td > a {
-  font-weight: 500;
-  text-align: justify;
-}
-.custom-table-container {
-  overflow-x: auto;
-}
-.custom-adjust-table {
-  width: 100% !important;
-  margin: 10px 0 !important;
-}
+
 
 .mytooltip {
   position: relative;
