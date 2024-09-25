@@ -27,7 +27,9 @@
                   <label for="selectSupremeCourts" class="checkbox-label">所有高等法院</label>
                 </div>
                 <div class="col-md-6">
-                  <div v-for="court_name in supremeCourtValues" :key="court_name">{{ court_name }}</div>
+                  <div>臺灣高等法院</div>
+                  <div>臺灣高等法院臺中、 臺南、 高雄、 花蓮分院</div>
+                  <div>福建高等法院金門分院</div>
                 </div>
               </div>
               <div class="row">
@@ -184,7 +186,7 @@ export default {
         { name: '福建金門地方法院', value: 'fjjmdfy' },
         { name: '福建連江地方法院', value: 'fjljdfy' }
       ],
-      allCourtValues: ['最高法院', '智慧財產集商業法院', '所有高等法院', '所有地方法院'],
+      allCourtValues: ['最高法院', '智慧財產及商業法院', '所有高等法院', '所有地方法院'],
       supremeCourtValues: [],
       districtCourtValues: [],
       selectedCourts: [],
