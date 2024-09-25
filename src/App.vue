@@ -8,7 +8,7 @@
           <template v-if="windowWidth < 400">
             使用說明
           </template>
-          <template v-else>簡介與使用說明</template>
+          <template v-else>使用說明與技術簡介</template>
         </router-link></li>
         <li class="tab" :class="$route.path=='/members'?'active':''"><router-link to="/members">開發團隊</router-link></li>
       </ul>
@@ -111,7 +111,7 @@ nav a {
 .jump-bar {
   height: 120px;
   background-color: #000;
-  background-size: 810px 180px;
+  background-size: 960px 140px;
   background-position: 50% -20px;
   background-repeat: no-repeat;
 }
@@ -153,7 +153,7 @@ nav a {
   border-radius: 5px; /* Optional: rounded corners */
   transition: background-color 0.3s; /* Smooth transition for hover effect */
   text-decoration: none !important;
-  width: 160px;
+  width: fit-content;
 }
 
 .menu .tab a:hover {

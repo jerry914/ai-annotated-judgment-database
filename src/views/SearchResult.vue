@@ -3,8 +3,7 @@
     <!-- First Row: Search Query and Statistical Results -->
     <div class="row">
       <div class="col-md-8">
-        
-        <div class="fw-bolder my-1 py-1">搜尋條件</div>
+        <div class="fw-bolder my-1 py-1">{{jud_name}}案件搜尋條件</div>
         <div>
           <div class="d-flex flex-wrap">
             <div class="condition-block" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
@@ -12,8 +11,8 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="fw-bolder my-1 py-1">查詢結果(最多顯示近期的100筆資料)</div>
-        <div>
+        <div class="fw-bolder my-1 py-1">{{jud_name}}案件查詢結果(最多顯示近期的100筆資料)</div>
+        <div v-if="jud_type != 'civil'">
           <el-radio-group v-model="prediction_name" size="large">
             <el-radio
               v-for="(pred, i) in pred_options"
@@ -24,6 +23,9 @@
             <div>{{ pred.name }} {{ resultCount[i] }}</div>
           </el-radio>
           </el-radio-group>
+        </div>
+        <div v-else class="non-selectable-radio">
+          {{ pred_options[0].name }} {{ resultCount[0] }}
         </div>
       </div>
     </div>
@@ -54,7 +56,46 @@
           </tr>
         </thead>
         <tbody v-if="searchResults[prediction_type]">
-          <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
+          <!-- 見解 -->
+          <template v-if="prediction_type == 'opinion'">
+            <tr v-for="(item, index) in searchResults['opinion'].data" :key="index">
+              <!-- Index Column -->
+              <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
+                  :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
+
+              <!-- Case Details Columns: Using the first jud data in each group -->
+              <template v-for="field in searchFields" :key="field.name">
+                <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
+                  <template v-if="field.name == 'case_num'">
+                    <a :href="item.group[0].jud_url" target="_blank">{{ item.group[0].case_num }}</a>
+                  </template>
+                  <template v-else-if="field.name == 'jud_date'">
+                    {{ formatDate(item.group[0].jud_date) }}
+                  </template>
+                  <template v-else-if="field.name == 'other_opinion'">
+                    <!-- Group Length Column: Added with hyperlink -->
+                    <div class="other_opinion_selector">
+                      <a @click="openGroupDialog(item.group)">{{ item.group_length }}</a>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <p style="color: rgb(138, 138, 138);" v-if="item.group[0][field.name] == null">無</p>
+                    <p v-else-if="(item.group[0][field.name].length > maxTextLength || (item.group[0][field.name].match(/\n/g) || []).length > 5)" 
+                        class="mytooltip custom-overflow-column" 
+                        @click="openDialog(addHighlighter(field.name, item.group[0][field.name]))">
+                      <span v-html="addHighlighter(field.name, item.group[0][field.name].substr(0,250))"></span>...more
+                      <span class="tooltiptext">點擊閱讀全文</span>
+                    </p>
+                    <p v-else v-html="addHighlighter(field.name, item.group[0][field.name])"></p>
+                  </template>
+                </td>
+              </template>
+            </tr>
+          </template>
+
+          <!-- 非見解 -->
+          <template v-else>
+            <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
             <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
             <template v-for="field in searchFields" :key="field.name" >
               <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
@@ -75,12 +116,51 @@
               </td>
             </template>
           </tr>
+          </template>
+          
           <tr v-if="searchResults.length == 0">
             <td class="no-found-cell" colspan="8">查無資料
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- el-dialog for displaying other jud info in the group -->
+      <el-dialog v-model="isGroupDialogVisible" width="80%" title="類似見解">
+        <table class="table table-bordered custom-adjust-table">
+          <thead>
+            <tr class="text-center">
+              <!-- <th v-for="field in otherSearchFields" :key="field.name" class="custom-blue">{{ field.type }}</th> -->
+              <th class="custom-blue">序號</th>
+              <template v-for="field in otherSearchFields" :key="field.name">
+                <th class="custom-blue">{{ field.type }}</th>
+              </template>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(groupItem, groupIndex) in selectedGroup.slice(1)" :key="groupIndex">
+
+              <!-- Index Column -->
+              <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
+                  :data-label="'序號'">{{ groupIndex + 1 }}</td>
+
+              <td v-for="field in otherSearchFields" :key="field.name" :data-label="field.type">
+                <template v-if="field.name == 'case_num'">
+                  <a :href="groupItem.jud_url" target="_blank">{{ groupItem.case_num }}</a>
+                </template>
+                <template v-else-if="field.name == 'jud_date'">
+                  {{ formatDate(groupItem.jud_date) }}
+                </template>
+                <template v-else>
+                  <p style="color: rgb(138, 138, 138);" v-if="groupItem[field.name] == null">無</p>
+                  <p v-else v-html="addHighlighter(field.name, groupItem[field.name])"></p>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </el-dialog>
+
       <el-dialog
         v-model="dialogVisible"
         width="60%"
@@ -109,8 +189,9 @@
 </template>
 
 <script>
-import axios from 'axios'
-// import testSearchResults from '../../data/prediction_殺人.json'
+// import axios from 'axios'
+import criminalTestResult from '../../data/criminal.json'
+import civilTestResult from '../../data/civil.json'
 
 export default {
   data() {
@@ -118,6 +199,8 @@ export default {
       loading: true,
       mode: 'default', // default, sentence_kind
       params: {},
+      jud_type: '',
+      jud_name: '',
       searchFields: {
         court_type: {type: '法院', name: 'court_type'},
         case_num: {type: '案號', name: 'case_num'},
@@ -128,6 +211,14 @@ export default {
         opinion: {type: '見解', name:'opinion'},
         fee: {type: '心證', name:'fee'},
         sub: {type: '涵攝', name:'sub'},
+        other_opinion: {type: '類似見解筆數', name: 'other_opinion'}
+      },
+      otherSearchFields: {
+        case_num: {type: '案號', name: 'case_num'},
+        jud_date: {type: '日期', name: 'jud_date'},
+        case_type: {type: '案件別', name:'case_type'},
+        syllabus: {type: '主文', name: 'syllabus'},
+        opinion: {type: '見解', name:'opinion'}
       },
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
@@ -176,6 +267,8 @@ export default {
       conditionInfo: [
       ],
       maxTextLength: 250,
+      isGroupDialogVisible: false,
+      selectedGroup: [],
       dialogVisible: false,
       dialogText: '',
       prediction_type: '',
@@ -229,7 +322,14 @@ export default {
       else if (name == 'syllabus') {
         return 'min-width: 125px;'
       }
+      else if (name == 'other_opinion') {
+        return 'min-width: 80px;'
+      }
       return 'min-width: 200px;'
+    },
+    openGroupDialog(group) {
+      this.selectedGroup = group;
+      this.isGroupDialogVisible = true;
     },
     openDialog(content) {
       this.dialogVisible = true
@@ -247,6 +347,14 @@ export default {
       }
       if (name == 'opinion' || name == 'fee' || name == 'sub') {
         if (this.prediction_type == name) {
+          return true
+        }
+        else {
+          return false
+        }
+      }
+      if (name == 'other_opinion') {
+        if (this.prediction_type == 'opinion') {
           return true
         }
       }
@@ -370,6 +478,8 @@ export default {
         'syllabus': urlParams.get('syllabus') || '', 
         'prediction': urlParams.get('prediction') || ''
       }
+      this.jud_type = urlParams.get('jud_type')
+      this.jud_name = this.jud_type == 'civil' ? '民事' : '刑事'
       this.params = this.removeEmptyStringValues(this.params)
       // console.log(this.params)
     },
@@ -378,14 +488,16 @@ export default {
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
       try {
-        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/search', {
-          headers: {
-            "ngrok-skip-browser-warning": "69420"
-          },
-          params: this.params
-        });
-        // const apiResponse = testSearchResults
-        const apiResponse = response.data
+        // const response = await axios.get('http://140.114.80.46:6128/api/search', {
+        //   headers: {
+        //     "ngrok-skip-browser-warning": "69420"
+        //   },
+        //   params: this.params
+        // });
+        
+
+        const apiResponse = this.jud_type == 'civil' ? civilTestResult : criminalTestResult
+        // const apiResponse = response.data
         // console.log(apiResponse)
         this.searchResults = apiResponse
 
@@ -401,7 +513,7 @@ export default {
         this.resultCount.push(this.getCountByName('opinion', '見解'))
         this.resultCount.push(this.getCountByName('fee', '心證'))
         this.resultCount.push(this.getCountByName('sub', '涵攝'))
-        
+
         this.loading = false
       } catch (error) {
         console.error('There was an error!', error)
@@ -409,6 +521,9 @@ export default {
       }
     },
     getCountByName(type, name) {
+        if (this.searchResults[type] == null ) {
+          return 0
+        }
         const item = this.searchResults[type].summary.find(entry => entry.name === name);
         let jud_count = this.searchResults[type].summary[0].count;
         if (item && jud_count) {
@@ -553,5 +668,22 @@ export default {
   padding: 3px 5px;
   background-color: #e7e7e7;
   border: 1px solid #ccc;
+}
+.non-selectable-radio {
+  margin: 10px 0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  width: fit-content;
+  border: 1px solid #c4c4c4;
+  font-size: 0.9rem;
+  color: #4e4e4e;
+}
+.other_opinion_selector{
+  text-align: center;
+  text-decoration: underline;
+  width: 100%;
+  cursor: pointer;
+  font-weight: bolder;
+  color: #0a60ac;
 }
 </style>
