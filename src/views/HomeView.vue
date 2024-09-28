@@ -197,7 +197,7 @@ export default {
       isSelectedAllCourts: true,
       defaultDateRange: {
         from: {
-          year: '106',
+          year: '105',
           month: '1'
         },
         to: {
@@ -207,7 +207,7 @@ export default {
       },
       selectedDateRange: {
         from: {
-          year: '106',
+          year: '105',
           month: '1'
         },
         to: {

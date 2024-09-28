@@ -27,6 +27,23 @@
         <div v-else class="non-selectable-radio">
           {{ pred_options[0].name }} {{ resultCount[0] }}
         </div>
+        <div v-if="prediction_type=='opinion'">
+          <el-form>
+            <div class="fw-bolder my-1 py-1">見解相似度</div>
+            <!-- Slider with 3 opinion options (Low, Mid, High) -->
+            <el-form-item>
+              <el-slider 
+                v-model="prob_type" 
+                :min="0" 
+                :max="2" 
+                :step="1" 
+                show-stops 
+                :marks="marks"
+                :show-tooltip="false"
+              />
+            </el-form-item>
+          </el-form>
+        </div>
       </div>
     </div>
     
@@ -138,7 +155,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(groupItem, groupIndex) in selectedGroup.slice(1)" :key="groupIndex">
+            <tr v-for="(groupItem, groupIndex) in selectedGroup" :key="groupIndex">
 
               <!-- Index Column -->
               <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
@@ -189,9 +206,9 @@
 </template>
 
 <script>
-// import axios from 'axios'
-import criminalTestResult from '../../data/criminal.json'
-import civilTestResult from '../../data/civil.json'
+import axios from 'axios'
+// import criminalTestResult from '../../data/criminal.json'
+// import civilTestResult from '../../data/civil.json'
 
 export default {
   data() {
@@ -201,6 +218,13 @@ export default {
       params: {},
       jud_type: '',
       jud_name: '',
+      prop_query: 'mid',
+      prob_type: 1,
+      marks: {
+        0: '低',
+        1: '中',
+        2: '高',
+      },
       searchFields: {
         court_type: {type: '法院', name: 'court_type'},
         case_num: {type: '案號', name: 'case_num'},
@@ -216,8 +240,6 @@ export default {
       otherSearchFields: {
         case_num: {type: '案號', name: 'case_num'},
         jud_date: {type: '日期', name: 'jud_date'},
-        case_type: {type: '案件別', name:'case_type'},
-        syllabus: {type: '主文', name: 'syllabus'},
         opinion: {type: '見解', name:'opinion'}
       },
       courtTypeOptions: [
@@ -303,6 +325,15 @@ export default {
     prediction_type(newValue) {
       this.conditionInfo = this.searchResults[newValue].condition_info.available;
       this.pageDetial = this.searchResults[newValue].meta;
+    },
+    prob_type(newValue) {
+      const prop_name = {
+        0: 'low',
+        1: 'mid',
+        2: 'high'
+      }
+      this.prop_query = prop_name[newValue]
+      this.fetchData()
     }
   },
   methods: {
@@ -344,6 +375,11 @@ export default {
       }
       if (name == 'basic_info' && !this.params.basic_info) {
         return false
+      }
+      if (name == 'case_type' || name == 'syllabus') {
+        if (this.jud_type=='civil') {
+          return false
+        }
       }
       if (name == 'opinion' || name == 'fee' || name == 'sub') {
         if (this.prediction_type == name) {
@@ -487,17 +523,17 @@ export default {
       this.loading = true
       this.params.page = this.pageDetial.page
       this.params.size = this.pageDetial.size
+      this.params.prop = this.prop_query
       try {
-        // const response = await axios.get('http://140.114.80.46:6128/api/search', {
-        //   headers: {
-        //     "ngrok-skip-browser-warning": "69420"
-        //   },
-        //   params: this.params
-        // });
-        
+        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/'+this.jud_type, {
+          headers: {
+            "ngrok-skip-browser-warning": "69420"
+          },
+          params: this.params
+        });
 
-        const apiResponse = this.jud_type == 'civil' ? civilTestResult : criminalTestResult
-        // const apiResponse = response.data
+        // const apiResponse = this.jud_type == 'civil' ? civilTestResult : criminalTestResult
+        const apiResponse = response.data
         // console.log(apiResponse)
         this.searchResults = apiResponse
 
