@@ -11,7 +11,7 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="fw-bolder my-1 py-1">{{jud_name}}案件查詢結果(最多顯示近期的100筆資料)</div>
+        <div class="fw-bolder my-1 py-1">{{jud_name}}案件查詢結果(最多顯示近期的50筆資料)</div>
         <div v-if="jud_type != 'civil'">
           <el-radio-group v-model="prediction_name" size="large">
             <el-radio
@@ -51,13 +51,14 @@
       <div class="pagination-container">
         <el-pagination
           class="custom-pagination"
+          :disabled='true'
           :current-page="pageDetial.page"
           :page-size="pageDetial.size"
-          :pager-count="4"
+          :pager-count="4"  
           :page-sizes="[10, 50, 100]"
           :total="pageDetial.total"
           background
-          layout="total, sizes, prev, pager, next"
+          layout="total"
           @size-change="handlePageSize"
           @current-change="handlePageChange"
         />
@@ -190,13 +191,14 @@
       <div class="pagination-container">
         <el-pagination
           class="custom-pagination"
+          :disabled='true'
           :current-page="pageDetial.page"
           :page-size="pageDetial.size"
           :pager-count="4"
           :page-sizes="[10, 50, 100]"
           :total="pageDetial.total"
           background
-          layout="total, sizes, prev, pager, next"
+          layout="total"
           @size-change="handlePageSize"
           @current-change="handlePageChange"
         />
@@ -280,7 +282,7 @@ export default {
       resultCount: [],
       pageDetial: {
         "page": 1,
-        "size": 10,
+        "size": 50,
         "next_page_url": null,
         "previous_page_url": null,
         "total_pages": null,
