@@ -27,23 +27,6 @@
         <div v-else class="non-selectable-radio">
           {{ pred_options[0].name }} {{ resultCount[0] }}
         </div>
-        <div v-if="prediction_type=='opinion'">
-          <el-form>
-            <div class="fw-bolder my-1 py-1">見解相似度</div>
-            <!-- Slider with 3 opinion options (Low, Mid, High) -->
-            <el-form-item>
-              <el-slider 
-                v-model="prob_type" 
-                :min="0" 
-                :max="2" 
-                :step="1" 
-                show-stops 
-                :marks="marks"
-                :show-tooltip="false"
-              />
-            </el-form-item>
-          </el-form>
-        </div>
       </div>
     </div>
     
@@ -75,12 +58,11 @@
         </thead>
         <tbody v-if="searchResults[prediction_type]">
           <!-- 見解 -->
-          <template v-if="prediction_type == 'opinion'">
+          <template v-if="prediction_type == 'opinion' && jud_type == 'criminal'">
             <tr v-for="(item, index) in searchResults['opinion'].data" :key="index">
               <!-- Index Column -->
               <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
                   :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
-
               <!-- Case Details Columns: Using the first jud data in each group -->
               <template v-for="field in searchFields" :key="field.name">
                 <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
@@ -392,7 +374,7 @@ export default {
         }
       }
       if (name == 'other_opinion') {
-        if (this.prediction_type == 'opinion') {
+        if (this.prediction_type == 'opinion' && this.jud_type == 'criminal') {
           return true
         }
       }
