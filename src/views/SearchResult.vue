@@ -1,5 +1,5 @@
 <template>
-  <div class="container result-page-container" v-loading="loading">
+  <div class="container result-page-container" v-loading="loading[prediction_type]">
     <!-- First Row: Search Query and Statistical Results -->
     <div class="row">
       <div class="col-md-8">
@@ -15,17 +15,24 @@
         <div v-if="jud_type != 'civil'">
           <el-radio-group v-model="prediction_name" size="large">
             <el-radio
-              v-for="(pred, i) in pred_options"
+              v-for="(pred) in pred_options"
               :key="pred.value"
-              :label="pred.name" border
-              style="margin: 5px 0;"
+              :label="pred.name"
+              border
+              style="margin: 5px 5px;"
+              :disabled="loading[pred.value]"
             >
-            <div>{{ pred.name }} {{ resultCount[i] }}</div>
-          </el-radio>
+              <div style="display: flex; align-items: center;">
+                <span> {{ pred.name }} {{ resultCount[pred.value] }}</span>
+                <el-icon v-if="loading[pred.value]" style="margin-left: 8px;" class="is-loading">
+                  <Loading />
+                </el-icon>
+              </div>
+            </el-radio>
           </el-radio-group>
         </div>
         <div v-else class="non-selectable-radio">
-          {{ pred_options[0].name }} {{ resultCount[0] }}
+          {{ pred_options[2].name }} {{ resultCount['opinion'] }}
         </div>
         <div v-if="prediction_type=='opinion' && jud_type=='criminal'">
           <el-form>
@@ -52,11 +59,11 @@
         <el-pagination
           class="custom-pagination"
           :disabled='true'
-          :current-page="pageDetial.page"
-          :page-size="pageDetial.size"
+          :current-page="pageDetail.page"
+          :page-size="pageDetail.size"
           :pager-count="4"  
           :page-sizes="[10, 50, 100]"
-          :total="pageDetial.total"
+          :total="pageDetail.total"
           background
           layout="total"
           @size-change="handlePageSize"
@@ -79,7 +86,7 @@
             <tr v-for="(item, index) in searchResults['opinion'].data" :key="index">
               <!-- Index Column -->
               <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
-                  :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
+                  :data-label="'序號'">{{ index + (pageDetail.page-1)*pageDetail.size + 1 }}</td>
               <!-- Case Details Columns: Using the first jud data in each group -->
               <template v-for="field in searchFields" :key="field.name">
                 <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
@@ -113,7 +120,7 @@
           <!-- 非見解 -->
           <template v-else>
             <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
-            <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ index + (pageDetial.page-1)*pageDetial.size + 1 }}</td>
+            <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ index + (pageDetail.page-1)*pageDetail.size + 1 }}</td>
             <template v-for="field in searchFields" :key="field.name" >
               <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
                 <template v-if="field.name == 'case_num'">
@@ -191,11 +198,11 @@
         <el-pagination
           class="custom-pagination"
           :disabled='true'
-          :current-page="pageDetial.page"
-          :page-size="pageDetial.size"
+          :current-page="pageDetail.page"
+          :page-size="pageDetail.size"
           :pager-count="4"
           :page-sizes="[10, 50, 100]"
-          :total="pageDetial.total"
+          :total="pageDetail.total"
           background
           layout="total"
           @size-change="handlePageSize"
@@ -207,14 +214,20 @@
 </template>
 
 <script>
-import axios from 'axios'
-// import criminalTestResult from '../../data/criminal.json'
-// import civilTestResult from '../../data/civil.json'
+import axios from 'axios';
+import { Loading } from '@element-plus/icons-vue';
 
 export default {
+  components: {
+    Loading,
+  },
   data() {
     return {
-      loading: true,
+      loading: {
+        fee: false,
+        sub: false,
+        opinion: false,
+      },
       mode: 'default', // default, sentence_kind
       params: {},
       jud_type: '',
@@ -227,21 +240,21 @@ export default {
         2: '高',
       },
       searchFields: {
-        court_type: {type: '法院', name: 'court_type'},
-        case_num: {type: '案號', name: 'case_num'},
-        jud_date: {type: '日期', name: 'jud_date'},
-        case_type: {type: '案件別', name:'case_type'},
-        basic_info: {type: '當事人等基本資料', name:'basic_info'},
-        syllabus: {type: '主文', name: 'syllabus'},
-        opinion: {type: '見解', name:'opinion'},
-        fee: {type: '心證', name:'fee'},
-        sub: {type: '涵攝', name:'sub'},
-        other_opinion: {type: '類似見解筆數', name: 'other_opinion'}
+        court_type: { type: '法院', name: 'court_type' },
+        case_num: { type: '案號', name: 'case_num' },
+        jud_date: { type: '日期', name: 'jud_date' },
+        case_type: { type: '案件別', name: 'case_type' },
+        basic_info: { type: '當事人等基本資料', name: 'basic_info' },
+        syllabus: { type: '主文', name: 'syllabus' },
+        fee: { type: '心證', name: 'fee' },
+        sub: { type: '涵攝', name: 'sub' },
+        opinion: { type: '見解', name: 'opinion' },
+        other_opinion: { type: '類似見解筆數', name: 'other_opinion' },
       },
       otherSearchFields: {
-        case_num: {type: '案號', name: 'case_num'},
-        jud_date: {type: '日期', name: 'jud_date'},
-        opinion: {type: '見解', name:'opinion'}
+        case_num: { type: '案號', name: 'case_num' },
+        jud_date: { type: '日期', name: 'jud_date' },
+        opinion: { type: '見解', name: 'opinion' },
       },
       courtTypeOptions: [
         { name: '最高法院', value: 'zgf' },
@@ -273,305 +286,277 @@ export default {
         { name: '臺灣基隆地方法院', value: 'twjldfy' },
         { name: '臺灣澎湖地方法院', value: 'twphdfy' },
         { name: '福建金門地方法院', value: 'fjjmdfy' },
-        { name: '福建連江地方法院', value: 'fjljdfy' }
+        { name: '福建連江地方法院', value: 'fjljdfy' },
       ],
       supremeCourtValues: [],
       districtCourtValues: [],
-      searchResults: [],
-      resultCount: [],
-      pageDetial: {
-        "page": 1,
-        "size": 50,
-        "next_page_url": null,
-        "previous_page_url": null,
-        "total_pages": null,
-        "total": null
+      searchResults: {},
+      resultCount: {},
+      pageDetail: {
+        page: 1,
+        size: 50,
+        next_page_url: null,
+        previous_page_url: null,
+        total_pages: null,
+        total: null,
       },
-      conditionInfo: [
-      ],
+      conditionInfo: [],
       maxTextLength: 250,
       isGroupDialogVisible: false,
       selectedGroup: [],
       dialogVisible: false,
       dialogText: '',
-      prediction_type: '',
-      prediction_name: '',
+      prediction_type: 'fee',
+      prediction_name: '心證',
       pred_options: [
-        {
-          value: 'opinion',
-          name: '見解'
-        },
-        {
-          value: 'fee',
-          name: '心證'
-        },
-        {
-          value: 'sub',
-          name: '涵攝'
-        }
-      ]
+        { value: 'fee', name: '心證' },
+        { value: 'sub', name: '涵攝' },
+        { value: 'opinion', name: '見解' },
+      ],
     };
   },
   created() {
-    // Call the method to fetch data when component is created
-    this.initParams()
-    this.initializeCourt()
-    this.fetchData()
+    this.initParams();
+    this.initializeCourt();
+    this.fetchAllData();
   },
   watch: {
     prediction_name(newName) {
-      const selectedOption = this.pred_options.find(pred => pred.name === newName);
+      const selectedOption = this.pred_options.find((pred) => pred.name === newName);
       this.prediction_type = selectedOption ? selectedOption.value : '';
     },
     prediction_type(newValue) {
-      this.conditionInfo = this.searchResults[newValue].condition_info.available;
-      this.pageDetial = this.searchResults[newValue].meta;
+      if (this.searchResults[newValue]) {
+        this.updateConditionInfo();
+        this.pageDetail = this.searchResults[newValue].meta;
+      }
     },
     prob_type(newValue) {
-      const prop_name = {
-        0: 'low',
-        1: 'mid',
-        2: 'high'
-      }
-      this.prop_query = prop_name[newValue]
-      this.fetchData()
-    }
+      const prop_name = ['low', 'mid', 'high'];
+      this.prop_query = prop_name[newValue] || 'mid';
+      this.fetchAllData();
+    },
   },
   methods: {
     getColumnWidth(name) {
-      if (name == 'basic_info') {
-        return 'min-width: 260px;'
-      }
-      else if (name == 'jud_date') {
-        return 'min-width: 90px;'
-      }
-      else if (name == 'case_type') {
-        return 'min-width: 125px;'
-      }
-      else if (name == 'case_num') {
-        return 'min-width: 90px;'
-      }
-      else if (name == 'syllabus') {
-        return 'min-width: 125px;'
-      }
-      else if (name == 'other_opinion') {
-        return 'min-width: 80px;'
-      }
-      return 'min-width: 200px;'
+      const widths = {
+        basic_info: 'min-width: 260px;',
+        jud_date: 'min-width: 90px;',
+        case_type: 'min-width: 125px;',
+        case_num: 'min-width: 90px;',
+        syllabus: 'min-width: 125px;',
+        other_opinion: 'min-width: 80px;',
+      };
+      return widths[name] || 'min-width: 200px;';
     },
     openGroupDialog(group) {
       this.selectedGroup = group;
       this.isGroupDialogVisible = true;
     },
     openDialog(content) {
-      this.dialogVisible = true
-      this.dialogText = content
+      this.dialogVisible = true;
+      this.dialogText = content;
     },
     handleClose() {
-      this.dialogVisible = false
+      this.dialogVisible = false;
     },
     checkQueryEnable(name) {
-      if (name == 'court_type') {
-        return false
-      }
-      if (name == 'basic_info' && !this.params.basic_info) {
-        return false
-      }
-      if (name == 'case_type' || name == 'syllabus') {
-        if (this.jud_type=='civil') {
-          return false
-        }
-      }
-      if (name == 'opinion' || name == 'fee' || name == 'sub') {
-        if (this.prediction_type == name) {
-          return true
-        }
-        else {
-          return false
-        }
-      }
-      if (name == 'other_opinion') {
-        if (this.prediction_type == 'opinion' && this.jud_type == 'criminal') {
-          return true
-        }
-      }
-      else {
-        return true
-      }
-      return false
+      if (name === 'court_type') return false;
+      if (name === 'basic_info' && !this.params.basic_info) return false;
+      if (['case_type', 'syllabus'].includes(name) && this.jud_type === 'civil') return false;
+      if (['opinion', 'fee', 'sub'].includes(name)) return this.prediction_type === name;
+      if (name === 'other_opinion') return this.prediction_type === 'opinion' && this.jud_type === 'criminal';
+      return true;
     },
     handlePageSize(size) {
-      this.pageDetial.size = size
-      this.pageDetial.page = 1
-      this.fetchData()
+      this.pageDetail.size = size;
+      this.pageDetail.page = 1;
+      this.fetchAllData();
     },
     handlePageChange(page) {
-      this.pageDetial.page = page
-      this.fetchData()
+      this.pageDetail.page = page;
+      this.fetchAllData();
     },
     formatDate(dateStr) {
       const year = parseInt(dateStr.substring(0, 4), 10);
       const month = parseInt(dateStr.substring(4, 6), 10);
       const day = parseInt(dateStr.substring(6, 8), 10);
-
-      // Convert to Minguo calendar by subtracting 1911 from the Gregorian year
       const minguoYear = year - 1911;
-
       return `民國${minguoYear}年${month}月${day}日`;
     },
     convertDateString(input) {
-      // Split the input string into start and end dates
       const [startDate, endDate] = input.split('-');
-
-      // Format both start and end dates
       const formattedStartDate = this.formatDate(startDate);
       const formattedEndDate = this.formatDate(endDate);
-
-      // Combine the formatted dates into the final string
       return `起${formattedStartDate} - 迄${formattedEndDate}`;
     },
     getConditionInfo(info) {
-      if (this.searchFields[info[0]]) {
-        if (this.searchFields[info[0]].name == "jud_date") {
-          return `${this.searchFields[info[0]].type || ''}:  ${this.convertDateString(info[1])}`
+      const field = this.searchFields[info[0]];
+      if (!field) return '';
+      if (field.name === 'jud_date') {
+        return `${field.type || ''}:  ${this.convertDateString(info[1])}`;
+      } else if (field.name === 'court_type') {
+        let searchCourts = info[1].split(' ');
+        this.selectAllCourts = searchCourts.length === this.courtTypeOptions.length;
+        this.selectDistrictCourts = this.includesAll(searchCourts, this.districtCourtValues);
+        this.selectSupremeCourts = this.includesAll(searchCourts, this.supremeCourtValues);
+
+        if (this.selectAllCourts) {
+          return `${field.type || ''}: 所有法院`;
         }
-        else if (this.searchFields[info[0]].name == "court_type") {
-          
-          let searchCourts = info[1].split(' ')
-          this.selectAllCourts = searchCourts.length == this.courtTypeOptions.length
-          this.selectDistrictCourts = this.includesAll(searchCourts, this.districtCourtValues)
-          this.selectSupremeCourts = this.includesAll(searchCourts, this.supremeCourtValues)
-          if(this.selectAllCourts) {
-            return `${this.searchFields[info[0]].type || ''}: 所有法院`
-          }
-          let simplifyCourts = searchCourts
-          if(this.selectDistrictCourts) {
-            simplifyCourts = simplifyCourts.filter( ( el ) => !this.districtCourtValues.includes( el ) )
-            simplifyCourts.unshift('所有地方法院')
-          }
-          if(this.selectSupremeCourts) {
-            simplifyCourts = simplifyCourts.filter( ( el ) => !this.supremeCourtValues.includes( el ) )
-            simplifyCourts.unshift('所有高等法院')
-          }
-          return `${this.searchFields[info[0]].type || ''}: ${simplifyCourts.join(', ')}`
+
+        let simplifyCourts = [...searchCourts];
+        if (this.selectDistrictCourts) {
+          simplifyCourts = simplifyCourts.filter((el) => !this.districtCourtValues.includes(el));
+          simplifyCourts.unshift('所有地方法院');
         }
-        else {
-          return `${this.searchFields[info[0]].type || ''}:  ${info[1]}`
+        if (this.selectSupremeCourts) {
+          simplifyCourts = simplifyCourts.filter((el) => !this.supremeCourtValues.includes(el));
+          simplifyCourts.unshift('所有高等法院');
         }
-        
+        return `${field.type || ''}: ${simplifyCourts.join(', ')}`;
+      } else {
+        return `${field.type || ''}:  ${info[1]}`;
       }
     },
     addHighlighter(fieldName, rawData) {
-      let keywords = null
-      this.conditionInfo.forEach((condition) => {
-        if (condition[0] == fieldName) {
-          keywords = condition[1]
-          return
-        }
-      })
-
-      let result = rawData
-      if(keywords) {
-        keywords.split(" ").forEach((keyword) => {
-        result = result.replace(keyword,`<span class="highlighter-my">${keyword}</span>`)
-      })
+      let keywords = null;
+      if (Array.isArray(this.conditionInfo)) {
+        this.conditionInfo.forEach((condition) => {
+          if (condition[0] === fieldName) {
+            keywords = condition[1];
+          }
+        });
+      } else {
+        // Log or handle the situation when conditionInfo is not an array
+        console.warn('conditionInfo is not an array:', this.conditionInfo);
       }
-      result = result.replace(/\n+/g, '<br>')
-      // Remove <br> at the end of the string
-      result = result.replace(/<br>$/, '')
-      return result
+
+      let result = rawData;
+      if (keywords) {
+        keywords.split(' ').forEach((keyword) => {
+          result = result.replace(keyword, `<span class="highlighter-my">${keyword}</span>`);
+        });
+      }
+      result = result.replace(/\n+/g, '<br>').replace(/<br>$/, '');
+      return result;
     },
     removeEmptyStringValues(obj) {
-        Object.keys(obj).forEach(key => {
-            if (obj[key] === '') {
-                delete obj[key];
-            }
-        });
-        return obj;
+      Object.keys(obj).forEach((key) => {
+        if (obj[key] === '') {
+          delete obj[key];
+        }
+      });
+      return obj;
     },
     includesAll(arr, values) {
-      return values.every(v => arr.includes(v))
+      return values.every((v) => arr.includes(v));
     },
     initializeCourt() {
       this.supremeCourtValues = this.courtTypeOptions
-        .filter(option => option.name.includes('高等法院'))
-        .map(option => option.name)
+        .filter((option) => option.name.includes('高等法院'))
+        .map((option) => option.name);
 
       this.districtCourtValues = this.courtTypeOptions
-        .filter(option => option.name.includes('地方法院'))
-        .map(option => option.name)
+        .filter((option) => option.name.includes('地方法院'))
+        .map((option) => option.name);
     },
     initParams() {
-      const urlParams = new URLSearchParams(window.location.search)
+      const urlParams = new URLSearchParams(window.location.search);
 
       this.params = {
-        'search_method': "keyword",
-        'page': 1,
-        'size': this.pageDetial.size,
-        'court_type': urlParams.get('court_type') || '', 
-        'case_type': urlParams.get('case_type') || '',
-        'jud_date': urlParams.get('jud_date') || '', 
-        'basic_info': urlParams.get('basic_info') || '', 
-        'syllabus': urlParams.get('syllabus') || '', 
-        'prediction': urlParams.get('prediction') || ''
-      }
-      this.jud_type = urlParams.get('jud_type')
-      this.jud_name = this.jud_type == 'civil' ? '民事' : '刑事'
-      this.params = this.removeEmptyStringValues(this.params)
-      // console.log(this.params)
+        search_method: 'keyword',
+        page: 1,
+        size: this.pageDetail.size,
+        court_type: urlParams.get('court_type') || '',
+        case_type: urlParams.get('case_type') || '',
+        jud_date: urlParams.get('jud_date') || '',
+        basic_info: urlParams.get('basic_info') || '',
+        syllabus: urlParams.get('syllabus') || '',
+        prediction: urlParams.get('prediction') || '',
+      };
+      this.jud_type = urlParams.get('jud_type');
+      this.jud_name = this.jud_type === 'civil' ? '民事' : '刑事';
+      this.params = this.removeEmptyStringValues(this.params);
     },
-    async fetchData() {
-      this.loading = true
-      this.params.page = this.pageDetial.page
-      this.params.size = this.pageDetial.size
-      this.params.prop = this.prop_query
+    async fetchDataForType(type) {
+      this.loading[type] = true;
+
+      const api_url = `https://hssai-verdictdb.phys.nthu.edu.tw/api/${this.jud_type}/${type}`;
+      const params = { ...this.params };
+
+      params.page = this.pageDetail.page;
+      params.size = this.pageDetail.size;
+
       try {
-        const response = await axios.get('https://hssai-verdictdb.phys.nthu.edu.tw/api/'+this.jud_type, {
+        const response = await axios.get(api_url, {
           headers: {
-            "ngrok-skip-browser-warning": "69420"
+            'ngrok-skip-browser-warning': '69420',
           },
-          params: this.params
+          params,
         });
 
-        // const apiResponse = this.jud_type == 'civil' ? civilTestResult : criminalTestResult
-        const apiResponse = response.data
-        // console.log(apiResponse)
-        this.searchResults = apiResponse
+        const apiResponse = response.data;
 
-        if (!this.prediction_type) {
-          this.prediction_type = this.searchResults.opinion ? 'opinion' :
-                        this.searchResults.fee ? 'fee' : 
-                        'sub';
-          this.prediction_name = this.searchResults.opinion ? '見解' :
-                        this.searchResults.fee ? '心證' : 
-                        '涵攝';
-        }
-        
-        this.resultCount.push(this.getCountByName('opinion', '見解'))
-        this.resultCount.push(this.getCountByName('fee', '心證'))
-        this.resultCount.push(this.getCountByName('sub', '涵攝'))
-
-        this.loading = false
+        this.searchResults[type] = apiResponse[type];
+        this.resultCount[type] = this.getCountByName(type);
+        this.updateConditionInfo();
       } catch (error) {
-        console.error('There was an error!', error)
-        this.loading = false
+        console.error(`Error fetching data for ${type}:`, error);
+      } finally {
+        this.loading[type] = false;
       }
     },
-    getCountByName(type, name) {
-        if (this.searchResults[type] == null ) {
-          return 0
+    async fetchAllData() {
+      let predictionTypes = [];
+
+      if (this.jud_type === 'civil') {
+        predictionTypes = ['opinion'];
+        this.prediction_type = 'opinion';
+        this.prediction_name = '見解';
+      } else {
+        predictionTypes = ['fee', 'sub', 'opinion'];
+        if (!this.prediction_type) {
+          this.prediction_type = 'fee';
+          this.prediction_name = '心證';
         }
-        const item = this.searchResults[type].summary.find(entry => entry.name === name);
-        let jud_count = this.searchResults[type].summary[0].count;
-        if (item && jud_count) {
-            return `共計 ${item.count} 筆 從 ${jud_count} 篇裁判書`;
-        } else {
-            return null;
-        }
-    }
-  }
+      }
+
+      try {
+        await Promise.all(
+          predictionTypes.map((type) => this.fetchDataForType(type))
+        );
+      } catch (error) {
+        console.error('There was an error!', error);
+      }
+    },
+    getCountByName(type) {
+      let name = this.pred_options.find((option) => option.value === type).name
+
+      if (!this.searchResults[type]) {
+        return 0;
+      }
+      const item = this.searchResults[type].summary.find((entry) => entry.name === name);
+      const jud_count = this.searchResults[type].summary[0]?.count;
+
+      if (item && jud_count) {
+        return `共計 ${item.count} 筆 從 ${jud_count} 篇裁判書`;
+      }
+      return null;
+    },
+    updateConditionInfo() {
+      if (this.searchResults[this.prediction_type]) {
+        const conditionInfo = this.searchResults[this.prediction_type].condition_info.available;
+        this.conditionInfo = Array.isArray(conditionInfo) ? conditionInfo : [];
+        this.pageDetail = this.searchResults[this.prediction_type].meta;
+      } else {
+        this.conditionInfo = [];
+      }
+    },
+  },
 };
 </script>
+
 
 <style>
 .tooltiptext .highlighter-my {
@@ -722,5 +707,17 @@ export default {
   cursor: pointer;
   font-weight: bolder;
   color: #0a60ac;
+}
+.is-loading {
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
