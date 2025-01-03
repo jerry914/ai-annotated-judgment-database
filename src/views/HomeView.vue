@@ -11,39 +11,31 @@
         <form @submit.prevent="onSubmit">
           <!-- Case type input -->
           <!-- Court type select -->
+           <!-- Court type select -->
           <div class="form-group">
             <div style="margin: 10px 0"><strong>法院別</strong></div>
             <!-- Checkboxes for court selection -->
             <div class="check-court-container">
-              <div class="row">
-                <div class="col-md-6">
-                  <input type="checkbox" id="selectAll" class="hidden-checkbox" v-model="selectAllCourts" @change="selectAllChanged">
-                  <label for="selectAll" class="checkbox-label">所有法院</label>
-                </div>
-                <div class="col-md-6">
-                  <div v-for="court_name in allCourtValues" :key="court_name">{{ court_name }}</div>
-                </div>
+              <div class="check-court-option">
+                <input type="checkbox" id="selectAll" class="hidden-checkbox" v-model="selectAllCourts" @change="selectAllChanged">
+                <label for="selectAll" class="checkbox-label">所有法院</label>
               </div>
-              <div class="row">
-                <div class="col-md-6">
-                  <input type="checkbox" id="selectSupremeCourts" class="hidden-checkbox" v-model="selectSupremeCourts" @change="selectSupremeCourtsChanged">
-                  <label for="selectSupremeCourts" class="checkbox-label">所有高等法院</label>
-                </div>
-                <div class="col-md-6">
-                  <div>臺灣高等法院</div>
-                  <div>臺灣高等法院臺中、 臺南、 高雄、 花蓮分院</div>
-                  <div>福建高等法院金門分院</div>
-                </div>
+              <div class="check-court-option">
+                <input type="checkbox" id="selectSupremeCourts" class="hidden-checkbox" v-model="selectSupremeCourts" @change="selectSupremeCourtsChanged">
+                <label for="selectSupremeCourts" class="checkbox-label">所有高等法院</label>
               </div>
-              <div class="row">
-                <div class="col-md-6">
-                  <input type="checkbox" id="selectDistrictCourts" class="hidden-checkbox" v-model="selectDistrictCourts" @change="selectDistrictCourtsChanged">
-                  <label for="selectDistrictCourts" class="checkbox-label">所有地方法院</label>
-                </div>
-                <div class="col-md-6">
-                  <div>臺北、 新北、 士林、 桃園、 新竹、 苗栗、 臺中、 南投、 彰化、 雲林、 嘉義、 臺南、 高雄、 橋頭、 屏東、 臺東、 花蓮、 基隆、 澎湖、 金門、 連江等地方法院</div>
-                </div>
+              <div class="check-court-option">
+                <input type="checkbox" id="selectDistrictCourts" class="hidden-checkbox" v-model="selectDistrictCourts" @change="selectDistrictCourtsChanged">
+                <label for="selectDistrictCourts" class="checkbox-label">所有地方法院</label>
               </div>
+            </div>
+            
+            <div class="smartphone-message">請點擊下方輸入框以選取法院</div>
+            <!-- Court Selection Dropdown -->
+            <div>
+              <select class="form-select select-court-container" multiple v-model="selectedCourts">
+                <option v-for="(item, index) in courtTypeOptions" :key="index">{{ item.name }}</option>
+              </select>
             </div>
           </div>
 
@@ -78,27 +70,6 @@
         </form>
       </el-col>
       <el-col :lg="{'span':16,'offset':1}" :md="24" style="margin-top: 20px;">
-        <!-- 民事案件 -->
-        <div class="p-0 border rounded-3 mb-3">
-          <div class="flex-container">
-            <div class="flex-row header">
-              <div class="flex-column">民事案件(105/8-107/12)</div>
-              <div class="flex-column">請輸入搜尋條件</div>
-            </div>
-            <div class="flex-row" v-for="(field, index) in civilFormData.searchFields" :key="index">
-              <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}</div>
-              <div class="flex-column custom-light-purple">
-                <input type="text" class="form-control" v-model="field.query" :placeholder="field.example">
-              </div>
-            </div>
-            <div class="flex-row">
-              <div class="flex-column" style="background-color: #f5f5f5;"></div>
-              <div class="flex-column custom-light-purple">
-                <button class="btn btn-secondary custom-purlpe" @click="advanceSearch('civil')">開始搜尋</button>
-              </div>
-            </div>
-          </div>
-        </div>
         <!-- 刑事案件 -->
         <div class="p-0 border rounded-3">
           <div class="flex-container">
@@ -121,6 +92,27 @@
           </div>
         </div>
         <div class="form-instruction">( 註：關於見解/心證/涵攝的定義，請見「<a href="/about">使用說明與技術簡介</a>」。搜尋後的結果將會分開呈現。關鍵字若有兩個以上，請以空格分開。)
+        </div>
+        <!-- 民事案件 -->
+        <div class="p-0 border rounded-3 mb-3">
+          <div class="flex-container">
+            <div class="flex-row header">
+              <div class="flex-column">民事案件(105/8-107/12)</div>
+              <div class="flex-column">請輸入搜尋條件</div>
+            </div>
+            <div class="flex-row" v-for="(field, index) in civilFormData.searchFields" :key="index">
+              <div class="flex-column" style="background-color: #f5f5f5;">{{ field.type }}</div>
+              <div class="flex-column custom-light-purple">
+                <input type="text" class="form-control" v-model="field.query" :placeholder="field.example">
+              </div>
+            </div>
+            <div class="flex-row">
+              <div class="flex-column" style="background-color: #f5f5f5;"></div>
+              <div class="flex-column custom-light-purple">
+                <button class="btn btn-secondary custom-purlpe" @click="advanceSearch('civil')">開始搜尋</button>
+              </div>
+            </div>
+          </div>
         </div>
       </el-col>
     </el-row>
@@ -443,6 +435,7 @@ export default {
   color: #e15151;
   font-size: 0.9em;
   line-height: 1.5em;
+  margin-bottom: 20px;
 }
 
 .custom-brightblue{
@@ -515,9 +508,12 @@ export default {
 
 .check-court-container {
   margin-bottom: 10px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
-.check-court-container .row {
-  margin: 10px 0;
+.check-court-container .check-court-option {
+  margin: 0 5px;
 }
 .checkbox-label {
   display: inline-block;

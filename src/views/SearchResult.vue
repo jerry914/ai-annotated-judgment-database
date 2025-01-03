@@ -9,8 +9,22 @@
             <div class="condition-block" v-for="info in conditionInfo" :key="info">{{ getConditionInfo(info) }}</div>
           </div>
         </div>
+        <div>
+        <div style="width:40%;">
+          <el-input
+            v-model="advancedKeyword"
+            placeholder="輸入進階關鍵字"
+            class="my-2"
+            size="large"
+            clearable>
+          </el-input>
+          <button @click="performAdvancedSearch" class="btn btn-primary">
+            搜尋
+          </button>
+        </div>
       </div>
-      <div class="col-md-4">
+      </div>
+      <div class="col-md-4 my-2">
         <div class="fw-bolder my-1 py-1">{{jud_name}}案件查詢結果(最多顯示近期的50筆資料)</div>
         <div v-if="jud_type != 'civil'">
           <el-radio-group v-model="prediction_name" size="large">
@@ -42,7 +56,7 @@
               <el-slider 
                 v-model="prob_type" 
                 :min="0" 
-                :max="2" 
+                :max="3" 
                 :step="1" 
                 show-stops 
                 :marks="marks"
@@ -55,21 +69,6 @@
     </div>
     
     <div class="custom-table-container">
-      <div class="pagination-container">
-        <el-pagination
-          class="custom-pagination"
-          :disabled='true'
-          :current-page="pageDetail.page"
-          :page-size="pageDetail.size"
-          :pager-count="4"  
-          :page-sizes="[10, 50, 100]"
-          :total="pageDetail.total"
-          background
-          layout="total"
-          @size-change="handlePageSize"
-          @current-change="handlePageChange"
-        />
-        </div>
       <!-- 裁判資訊 Table -->
       <table class="table table-bordered custom-adjust-table">
         <thead>
@@ -82,11 +81,11 @@
         </thead>
         <tbody v-if="searchResults[prediction_type]">
           <!-- 見解 -->
-          <template v-if="prediction_type == 'opinion' && jud_type == 'criminal'">
-            <tr v-for="(item, index) in searchResults['opinion'].data" :key="index">
+          <template v-if="prediction_type == 'opinion' && jud_type == 'criminal' && prop_query != 'none'">
+            <tr v-for="(item, index) in sortedSearchResults" :key="index">
               <!-- Index Column -->
               <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
-                  :data-label="'序號'">{{ index + (pageDetail.page-1)*pageDetail.size + 1 }}</td>
+                  :data-label="'序號'">{{ parseInt(index) + 1 }}</td>
               <!-- Case Details Columns: Using the first jud data in each group -->
               <template v-for="field in searchFields" :key="field.name">
                 <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
@@ -119,8 +118,8 @@
 
           <!-- 非見解 -->
           <template v-else>
-            <tr v-for="(item, index) in searchResults[prediction_type].data" :key="index">
-            <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ index + (pageDetail.page-1)*pageDetail.size + 1 }}</td>
+            <tr v-for="(item, index) in sortedSearchResults" :key="index">
+            <td style="text-align: center;background-color: #BDE3FF;border: #97B6CC 1px solid;" :data-label="'序號'">{{ parseInt(index) + 1 }}</td>
             <template v-for="field in searchFields" :key="field.name" >
               <td v-if="checkQueryEnable(field.name)" :data-label="field.type" :style="getColumnWidth(field.name)">
                 <template v-if="field.name == 'case_num'">
@@ -193,22 +192,6 @@
       >
         <span v-html="dialogText"></span>
       </el-dialog>
-
-      <div class="pagination-container">
-        <el-pagination
-          class="custom-pagination"
-          :disabled='true'
-          :current-page="pageDetail.page"
-          :page-size="pageDetail.size"
-          :pager-count="4"
-          :page-sizes="[10, 50, 100]"
-          :total="pageDetail.total"
-          background
-          layout="total"
-          @size-change="handlePageSize"
-          @current-change="handlePageChange"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -233,11 +216,12 @@ export default {
       jud_type: '',
       jud_name: '',
       prop_query: 'mid',
-      prob_type: 1,
+      prob_type: 2,
       marks: {
-        0: '低',
-        1: '中',
-        2: '高',
+        0: '原始結果',
+        1: '相似度低',
+        2: '相似度中',
+        3: '相似度高',
       },
       searchFields: {
         court_type: { type: '法院', name: 'court_type' },
@@ -313,12 +297,19 @@ export default {
         { value: 'sub', name: '涵攝' },
         { value: 'opinion', name: '見解' },
       ],
+      sortedSearchResults: {},
+      advancedKeyword: '',
     };
   },
   created() {
     this.initParams();
     this.initializeCourt();
     this.fetchAllData();
+  },
+  mounted() {
+    if (this.searchResults[this.prediction_type]) {
+      this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
+    }
   },
   watch: {
     prediction_name(newName) {
@@ -328,26 +319,62 @@ export default {
     prediction_type(newValue) {
       if (this.searchResults[newValue]) {
         this.updateConditionInfo();
+        this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
         this.pageDetail = this.searchResults[newValue].meta;
       }
     },
     prob_type(newValue) {
-      const prop_name = ['low', 'mid', 'high'];
+      const prop_name = ['none', 'low', 'mid', 'high'];
       this.prop_query = prop_name[newValue] || 'mid';
-      this.fetchAllData();
+      this.fetchDataForType('opinion');
     },
   },
   methods: {
+    performAdvancedSearch() {
+      if (!this.advancedKeyword) {
+        this.sortedSearchResults = {...this.searchResults[this.prediction_type].data}; // Reset if no keyword
+        return;
+      }
+
+      const flattenObject = (obj) => {
+        const result = [];
+        const recurse = (cur, prop) => {
+          if (typeof cur === 'object' && cur !== null) {
+            for (const key in cur) {
+              recurse(cur[key], prop ? `${prop}.${key}` : key);
+            }
+          } else {
+            result.push(String(cur)); // Add values as strings
+          }
+        };
+        recurse(obj, '');
+        return result;
+      };
+
+      const containsKeyword = (obj) => {
+        const values = flattenObject(obj);
+        return values.some((value) =>
+          value.includes(this.advancedKeyword)
+        );
+      };
+
+      const matchedResults = this.searchResults[this.prediction_type].data.filter((result) =>
+        containsKeyword(result)
+      );
+
+      this.sortedSearchResults = [...matchedResults];
+      console.log(this.sortedSearchResults)
+    },
     getColumnWidth(name) {
       const widths = {
         basic_info: 'min-width: 260px;',
         jud_date: 'min-width: 90px;',
-        case_type: 'min-width: 125px;',
+        case_type: 'min-width: 75px;',
         case_num: 'min-width: 90px;',
-        syllabus: 'min-width: 125px;',
+        syllabus: 'min-width: 50px; max-width: 400px;',
         other_opinion: 'min-width: 80px;',
       };
-      return widths[name] || 'min-width: 200px;';
+      return widths[name] || 'min-width: 50px;max-width: 400px;';
     },
     openGroupDialog(group) {
       this.selectedGroup = group;
@@ -365,7 +392,7 @@ export default {
       if (name === 'basic_info' && !this.params.basic_info) return false;
       if (['case_type', 'syllabus'].includes(name) && this.jud_type === 'civil') return false;
       if (['opinion', 'fee', 'sub'].includes(name)) return this.prediction_type === name;
-      if (name === 'other_opinion') return this.prediction_type === 'opinion' && this.jud_type === 'criminal';
+      if (name === 'other_opinion') return this.prediction_type === 'opinion' && this.jud_type === 'criminal' && this.prop_query !== 'none';
       return true;
     },
     handlePageSize(size) {
@@ -482,11 +509,38 @@ export default {
     async fetchDataForType(type) {
       this.loading[type] = true;
 
-      const api_url = `https://hssai-verdictdb.phys.nthu.edu.tw/api/${this.jud_type}/${type}`;
+      const api_url = `http://140.114.80.46:6128/api/${this.jud_type}/${type}`;
       const params = { ...this.params };
 
       params.page = this.pageDetail.page;
       params.size = this.pageDetail.size;
+
+      if (type === 'opinion') {
+        params.prop = this.prop_query;
+      }
+
+      // Create a unique cache key based on the URL and parameters
+      const cacheKey = `${api_url}?${new URLSearchParams(params).toString()}`;
+
+      // Check localStorage for cached data
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { data, expiry } = JSON.parse(cachedData);
+
+        // Check if the cache is still valid
+        if (Date.now() < expiry) {
+          console.log('Returning cached data for:', cacheKey);
+          this.searchResults[type] = data;
+          this.resultCount[type] = this.getCountByName(type);
+          this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
+          this.updateConditionInfo();
+          this.loading[type] = false;
+          return;
+        } else {
+          // Remove expired cache
+          localStorage.removeItem(cacheKey);
+        }
+      }
 
       try {
         const response = await axios.get(api_url, {
@@ -498,8 +552,21 @@ export default {
 
         const apiResponse = response.data;
 
+        // Save the response to localStorage with an expiry time of 1 day
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            data: apiResponse[type],
+            count: this.getCountByName(type),
+            expiry: Date.now() + oneDayInMs, // Cache expires in 1 day
+          })
+        );
+
+        // Update the component's state
         this.searchResults[type] = apiResponse[type];
         this.resultCount[type] = this.getCountByName(type);
+        this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
         this.updateConditionInfo();
       } catch (error) {
         console.error(`Error fetching data for ${type}:`, error);
