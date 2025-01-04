@@ -16,7 +16,9 @@
             placeholder="輸入進階關鍵字"
             class="my-2"
             size="large"
-            clearable>
+            clearable
+            @clear="performAdvancedSearch"
+            @keyup.enter="performAdvancedSearch">
           </el-input>
           <button @click="performAdvancedSearch" class="btn btn-primary">
             搜尋
@@ -37,7 +39,8 @@
               :disabled="loading[pred.value]"
             >
               <div style="display: flex; align-items: center;">
-                <span> {{ pred.name }} {{ resultCount[pred.value] }}</span>
+                <span v-if="pred.value != 'other_opinion'"> {{ pred.name }} {{ resultCount[pred.value] }}</span>
+                <span v-else>( {{ pred.name }} )</span>
                 <el-icon v-if="loading[pred.value]" style="margin-left: 8px;" class="is-loading">
                   <Loading />
                 </el-icon>
@@ -47,23 +50,6 @@
         </div>
         <div v-else class="non-selectable-radio">
           {{ pred_options[2].name }} {{ resultCount['opinion'] }}
-        </div>
-        <div v-if="prediction_type=='opinion' && jud_type=='criminal'">
-          <el-form>
-            <div class="fw-bolder my-1 py-1">見解相似度</div>
-            <!-- Slider with 3 opinion options (Low, Mid, High) -->
-            <el-form-item>
-              <el-slider 
-                v-model="prob_type" 
-                :min="0" 
-                :max="3" 
-                :step="1" 
-                show-stops 
-                :marks="marks"
-                :show-tooltip="false"
-              />
-            </el-form-item>
-          </el-form>
         </div>
       </div>
     </div>
@@ -81,7 +67,7 @@
         </thead>
         <tbody v-if="searchResults[prediction_type]">
           <!-- 見解 -->
-          <template v-if="prediction_type == 'opinion' && jud_type == 'criminal' && prop_query != 'none'">
+          <template v-if="prediction_type == 'other_opinion' && jud_type == 'criminal'">
             <tr v-for="(item, index) in sortedSearchResults" :key="index">
               <!-- Index Column -->
               <td style="text-align: center; background-color: #BDE3FF; border: #97B6CC 1px solid;" 
@@ -215,14 +201,6 @@ export default {
       params: {},
       jud_type: '',
       jud_name: '',
-      prop_query: 'mid',
-      prob_type: 2,
-      marks: {
-        0: '原始結果',
-        1: '相似度低',
-        2: '相似度中',
-        3: '相似度高',
-      },
       searchFields: {
         court_type: { type: '法院', name: 'court_type' },
         case_num: { type: '案號', name: 'case_num' },
@@ -290,15 +268,17 @@ export default {
       selectedGroup: [],
       dialogVisible: false,
       dialogText: '',
-      prediction_type: 'fee',
-      prediction_name: '心證',
+      prediction_type: 'opinion',
+      prediction_name: '見解',
       pred_options: [
         { value: 'fee', name: '心證' },
         { value: 'sub', name: '涵攝' },
         { value: 'opinion', name: '見解' },
+        { value: 'other_opinion', name: '類似見解整理'}
       ],
       sortedSearchResults: {},
       advancedKeyword: '',
+      highAdvancedKeyword: ''
     };
   },
   created() {
@@ -322,20 +302,16 @@ export default {
         this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
         this.pageDetail = this.searchResults[newValue].meta;
       }
-    },
-    prob_type(newValue) {
-      const prop_name = ['none', 'low', 'mid', 'high'];
-      this.prop_query = prop_name[newValue] || 'mid';
-      this.fetchDataForType('opinion');
-    },
+    }
   },
   methods: {
     performAdvancedSearch() {
       if (!this.advancedKeyword) {
+        this.highAdvancedKeyword = this.advancedKeyword;
         this.sortedSearchResults = {...this.searchResults[this.prediction_type].data}; // Reset if no keyword
         return;
       }
-
+      this.highAdvancedKeyword = this.advancedKeyword;
       const flattenObject = (obj) => {
         const result = [];
         const recurse = (cur, prop) => {
@@ -363,7 +339,6 @@ export default {
       );
 
       this.sortedSearchResults = [...matchedResults];
-      console.log(this.sortedSearchResults)
     },
     getColumnWidth(name) {
       const widths = {
@@ -391,8 +366,9 @@ export default {
       if (name === 'court_type') return false;
       if (name === 'basic_info' && !this.params.basic_info) return false;
       if (['case_type', 'syllabus'].includes(name) && this.jud_type === 'civil') return false;
-      if (['opinion', 'fee', 'sub'].includes(name)) return this.prediction_type === name;
-      if (name === 'other_opinion') return this.prediction_type === 'opinion' && this.jud_type === 'criminal' && this.prop_query !== 'none';
+      if (['fee', 'sub'].includes(name)) return this.prediction_type === name;
+      if (['opinion'].includes(name)) return this.prediction_type === name || this.prediction_type === 'other_opinion';
+      if (name === 'other_opinion') return this.prediction_type === 'other_opinion' && this.jud_type === 'criminal';
       return true;
     },
     handlePageSize(size) {
@@ -448,6 +424,7 @@ export default {
     },
     addHighlighter(fieldName, rawData) {
       let keywords = null;
+      let advanced_keyword = this.highAdvancedKeyword;
       if (Array.isArray(this.conditionInfo)) {
         this.conditionInfo.forEach((condition) => {
           if (condition[0] === fieldName) {
@@ -464,6 +441,9 @@ export default {
         keywords.split(' ').forEach((keyword) => {
           result = result.replace(keyword, `<span class="highlighter-my">${keyword}</span>`);
         });
+      }
+      if (advanced_keyword) {
+        result = result.replace(advanced_keyword, `<span class="highlighter-advance">${advanced_keyword}</span>`);
       }
       result = result.replace(/\n+/g, '<br>').replace(/<br>$/, '');
       return result;
@@ -509,15 +489,21 @@ export default {
     async fetchDataForType(type) {
       this.loading[type] = true;
 
-      const api_url = `http://140.114.80.46:6128/api/${this.jud_type}/${type}`;
       const params = { ...this.params };
+      let query_type = type;
 
       params.page = this.pageDetail.page;
       params.size = this.pageDetail.size;
 
       if (type === 'opinion') {
-        params.prop = this.prop_query;
+        params.prop = 'none';
       }
+      else if (type === 'other_opinion') {
+        params.prop = 'high';
+        query_type = 'opinion';
+      }
+
+      const api_url = `https://hssai-verdictdb.phys.nthu.edu.tw/api/${this.jud_type}/${query_type}`;
 
       // Create a unique cache key based on the URL and parameters
       const cacheKey = `${api_url}?${new URLSearchParams(params).toString()}`;
@@ -531,8 +517,7 @@ export default {
         if (Date.now() < expiry) {
           console.log('Returning cached data for:', cacheKey);
           this.searchResults[type] = data;
-          this.resultCount[type] = this.getCountByName(type);
-          this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
+          this.resultCount[type] = this.getCountByName(query_type);
           this.updateConditionInfo();
           this.loading[type] = false;
           return;
@@ -552,20 +537,19 @@ export default {
 
         const apiResponse = response.data;
 
-        // Save the response to localStorage with an expiry time of 1 day
-        const oneDayInMs = 24 * 60 * 60 * 1000;
+        // Save the response to localStorage with an expiry time of 1 hour
+        const oneDayInMs = 60 * 60 * 1000;
         localStorage.setItem(
           cacheKey,
           JSON.stringify({
-            data: apiResponse[type],
-            count: this.getCountByName(type),
-            expiry: Date.now() + oneDayInMs, // Cache expires in 1 day
+            data: apiResponse[query_type],
+            expiry: Date.now() + oneDayInMs,
           })
         );
 
         // Update the component's state
-        this.searchResults[type] = apiResponse[type];
-        this.resultCount[type] = this.getCountByName(type);
+        this.searchResults[type] = apiResponse[query_type];
+        this.resultCount[type] = this.getCountByName(query_type);
         this.sortedSearchResults = {...this.searchResults[this.prediction_type].data};
         this.updateConditionInfo();
       } catch (error) {
@@ -582,10 +566,10 @@ export default {
         this.prediction_type = 'opinion';
         this.prediction_name = '見解';
       } else {
-        predictionTypes = ['fee', 'sub', 'opinion'];
+        predictionTypes = ['fee', 'sub', 'opinion', 'other_opinion'];
         if (!this.prediction_type) {
-          this.prediction_type = 'fee';
-          this.prediction_name = '心證';
+          this.prediction_type = 'opinion';
+          this.prediction_name = '見解';
         }
       }
 
@@ -601,7 +585,7 @@ export default {
       let name = this.pred_options.find((option) => option.value === type).name
 
       if (!this.searchResults[type]) {
-        return 0;
+        return null;
       }
       const item = this.searchResults[type].summary.find((entry) => entry.name === name);
       const jud_count = this.searchResults[type].summary[0]?.count;
@@ -631,6 +615,9 @@ export default {
 }
 .highlighter-my {
   background-color: yellow;
+}
+.highlighter-advance {
+  background-color: rgb(255, 116, 141);
 }
 .custom-pagination .el-pagination {
   display: flex;
