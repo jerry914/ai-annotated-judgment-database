@@ -344,12 +344,12 @@ export default {
       const widths = {
         basic_info: 'min-width: 260px;',
         jud_date: 'min-width: 90px;',
-        case_type: 'min-width: 75px;',
+        case_type: 'min-width: 125px;',
         case_num: 'min-width: 90px;',
-        syllabus: 'min-width: 50px; max-width: 400px;',
+        syllabus: 'min-width: 125px;',
         other_opinion: 'min-width: 80px;',
       };
-      return widths[name] || 'min-width: 50px;max-width: 400px;';
+      return widths[name] || 'min-width: 200px;';
     },
     openGroupDialog(group) {
       this.selectedGroup = group;
