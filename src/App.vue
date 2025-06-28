@@ -3,7 +3,8 @@
     <div class="jump-bar" :style="backgroundStyle"></div>
     <div class="menu-bar">
       <ul class="menu">
-        <li class="tab" :class="$route.path=='/'?'active tab':''"><router-link to="/">首頁</router-link></li>
+        <li class="tab" :class="$route.path=='/'?'active tab':''"><router-link to="/">首頁與AI助手</router-link></li>
+        <li class="tab" :class="$route.path=='/search'?'active':''"><router-link to="/search">檢索平台</router-link></li>
         <li class="tab" :class="$route.path=='/about'?'active':''"><router-link to="/about">
           <template v-if="windowWidth < 400">
             使用說明
@@ -136,7 +137,7 @@ nav a {
   display: flex;
   margin: 0;
   padding: 0;
-  width: 480px;
+  width: 580px;
 }
 
 .menu .tab {
