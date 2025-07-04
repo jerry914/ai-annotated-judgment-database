@@ -1,142 +1,163 @@
 <template>
   <div class="chat-container">
-    <div class="chat-header border rounded-3">
-      <p>本系統是國立清華大學人文社會AI應用與發展研究中心為執行AI公共化相關計畫之成果展示，以司法院所公開的民刑事案件判決書為訓練資料，讓生成式AI模型自動標註出與該案件有關的文字。可以用對話方式或關鍵字搜尋進行檢索或見解討論。免費對外開放，提供法學研究者、司法實務工作者或一般民眾使用。
-    </p>
-    </div>
-
-    <div class="chat-main">
-      <div class="chat-interface">
-        <div class="conversation-container" ref="conversationContainer">
-          <div 
-            v-for="(message, index) in conversation" 
-            :key="index" 
-            :class="['message', message.type]"
-          >
-            <div class="message-content">
-              <div class="message-text markdown-content" v-html="formatMessage(message.content)"></div>
-              
-              <!-- Keywords Options (Checkboxes) -->
-              <div v-if="message.options && message.options.option_type === 'keywords_options'" class="message-options">
-                <div class="keywords-container">
-                  <div class="keywords-list">
-                    <label 
-                      v-for="button in message.options.buttons" 
-                      :key="button.value"
-                      class="keyword-checkbox"
-                      :class="{ selected: selectedKeywords.includes(button.value) }"
-                    >
-                      <input 
-                        type="checkbox" 
-                        :value="button.value"
-                        v-model="selectedKeywords"
-                        @change="updateKeywordSelection"
-                      >
-                      <div class="custom-checkbox"></div>
-                      <span class="checkbox-label">{{ button.label }}</span>
-                    </label>
-                  </div>
-                  
-                  <!-- Custom Keyword Input -->
-                  <div class="custom-keyword-section">
-                    <div v-if="!showCustomInput" class="add-keyword-button" @click="showCustomInput = true">
-                      <span>+</span>
-                    </div>
-                    <div v-else class="keyword-input-container">
-                      <input 
-                        v-model="customKeyword"
-                        @keyup.enter="addCustomKeyword"
-                        placeholder="輸入關鍵字"
-                        class="keyword-input"
-                        ref="customKeywordInput"
-                      >
-                      <button @click="addCustomKeyword" class="keyword-input-button">確定</button>
-                    </div>
-                  </div>
-                  
-                  <!-- Action Buttons -->
-                  <div class="keywords-actions">
-                    <button @click="selectAllKeywords" class="select-all-button">全部選擇</button>
-                    <button @click="confirmKeywords" class="confirm-button" :disabled="selectedKeywords.length === 0">
-                      確認選擇
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Regular Options (Buttons) -->
-              <div v-else-if="message.options && message.options.buttons" class="message-options">
-                <button 
-                  v-for="button in message.options.buttons" 
-                  :key="button.value"
-                  @click="handleOptionClick(button.value)"
-                  class="option-button"
-                  :disabled="loading"
-                >
-                  {{ button.label }}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="loading" class="message bot">
-            <div class="message-content">
-              <div class="loading-indicator">
-                <div class="loading-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <p>AI 正在思考中...</p>
-              </div>
-            </div>
-          </div>
+    <div class="split-container" ref="splitContainer">
+      <!-- Left: Chat Section -->
+      <div class="chat-panel" :style="{ width: chatWidth + '%' }">
+        <div class="chat-header">
+          <h4>AI裁判書助手</h4>
+          <div class="chat-toolbar">
+          <button class="icon-btn" @click="toggleIntro" title="顯示/隱藏歡迎">
+            <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2" fill="none"/><text x="12" y="17" text-anchor="middle" font-size="14" fill="#fff">i</text></svg>
+          </button>
+          <button class="icon-btn" @click="downloadChatHistory" title="下載對話紀錄 PDF">
+            <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="17" width="16" height="4" rx="2" fill="#fff"/></svg>
+          </button>
         </div>
-
-        <div class="input-area">
-          <div class="input-container">
-            <textarea 
-              v-model="userInput" 
-              @keydown.enter.prevent="sendMessage"
-              placeholder="請輸入您的問題..."
-              class="message-input"
-              :disabled="loading"
-              rows="1"
-            ></textarea>
-            <button 
-              @click="sendMessage" 
-              class="send-button"
-              :disabled="loading || !userInput.trim()"
+        </div>
+        <div class="chat-interface">
+          <div class="conversation-container" ref="conversationContainer">
+            <div 
+              v-for="(message, index) in conversation" 
+              :key="index" 
+              :class="['message', message.type]"
             >
-              <span v-if="!loading">發送</span>
-              <span v-else>發送中...</span>
-            </button>
+              <div class="message-content">
+                <div class="message-text markdown-content" v-html="formatMessage(message.content)"></div>
+                
+                <!-- Keywords Options (Checkboxes) -->
+                <div v-if="message.options && message.options.option_type === 'keywords_options'" class="message-options">
+                  <div class="keywords-container">
+                    <div class="keywords-list">
+                      <label 
+                        v-for="button in message.options.buttons" 
+                        :key="button.value"
+                        class="keyword-checkbox"
+                        :class="{ selected: selectedKeywords.includes(button.value) }"
+                      >
+                        <input 
+                          type="checkbox" 
+                          :value="button.value"
+                          v-model="selectedKeywords"
+                          @change="updateKeywordSelection"
+                        >
+                        <div class="custom-checkbox"></div>
+                        <span class="checkbox-label">{{ button.label }}</span>
+                      </label>
+                    </div>
+                    
+                    <!-- Custom Keyword Input -->
+                    <div class="custom-keyword-section">
+                      <div v-if="!showCustomInput" class="add-keyword-button" @click="showCustomInput = true">
+                        <span>+</span>
+                      </div>
+                      <div v-else class="keyword-input-container">
+                        <input 
+                          v-model="customKeyword"
+                          @keyup.enter="addCustomKeyword"
+                          placeholder="輸入關鍵字"
+                          class="keyword-input"
+                          ref="customKeywordInput"
+                        >
+                        <button @click="addCustomKeyword" class="keyword-input-button">確定</button>
+                      </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="keywords-actions">
+                      <button @click="selectAllKeywords" class="select-all-button">全部選擇</button>
+                      <button @click="confirmKeywords" class="confirm-button" :disabled="selectedKeywords.length === 0">
+                        確認選擇
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Regular Options (Buttons) -->
+                <div v-else-if="message.options && message.options.buttons" class="message-options">
+                  <button 
+                    v-for="button in message.options.buttons" 
+                    :key="button.value"
+                    @click="handleOptionClick(button.value)"
+                    class="option-button"
+                    :disabled="loading"
+                  >
+                    {{ button.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="loading" class="message bot">
+              <div class="message-content">
+                <div class="loading-indicator">
+                  <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <p>AI 正在思考中...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-area">
+            <div class="input-container">
+              <textarea 
+                v-model="userInput" 
+                @keydown.enter.prevent="sendMessage"
+                placeholder="請輸入您的問題..."
+                class="message-input"
+                :disabled="loading"
+                rows="1"
+              ></textarea>
+              <button 
+                @click="sendMessage" 
+                class="send-button"
+                :disabled="loading || !userInput.trim()"
+              >
+                <span v-if="!loading">發送</span>
+                <span v-else>發送中...</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
-      <div v-if="currentDataTable && currentDataTable.length > 0" class="data-table-container">
-        <div class="table-header">
-          <h3>相關判決書</h3>
-          <p>共 {{ currentDataTable.length }} 筆資料</p>
+      <!-- Splitter -->
+      <div class="splitter" @mousedown="startDrag"></div>
+      <!-- Right: Introduction + Table -->
+      <div class="info-table-panel" :style="{ width: (100 - chatWidth) + '%' }">
+        <div v-show="showIntro" class="introduction-panel">
+          <p>
+            本系統是國立清華大學人文社會AI應用與發展研究中心為執行AI公共化相關計畫之成果展示，以司法院所公開的民刑事案件判決書為訓練資料，讓生成式AI模型自動標註出與該案件有關的文字。可以用對話方式或關鍵字搜尋進行檢索或見解討論。免費對外開放，提供法學研究者、司法實務工作者或一般民眾使用。<br><br>
+            目前AI裁判書助手1.0版，主要功能有兩個: <br>
+            (1) 事實搜尋：根據使用者輸入的案件事實描述，透過AI語意理解與關鍵字的搭配，精確的搜尋出裁判書資料庫中的類似案件；<br>
+            (2) 見解討論：根據使用者輸入的法學見解，從裁判書資料庫中找尋類似或不同角度的見解，並可針對其內容作進一步討論。<br><br>
+            目前的裁判書資料庫先以106-110年度的刑事案件為主，未來將更新案件年度並擴展到民事案件。
+          </p>
         </div>
-        
-        <div class="table-wrapper">
-          <table class="data-table">
-            <tbody>
-              <tr v-for="(item, index) in currentDataTable" :key="index">
-                <td class="case-cell">
-                    <span class="case-cell-index">第{{ index + 1 }}筆 案號：</span>
-                    <span class="case-cell-content" v-html="item['案號']"></span>
-                    <div class="case-cell-content-wrapper">
-                        <div>【{{ selectedCategory }}內容】</div>
-                        <div v-if="item[selectedCategory]" v-html="formatTableContent(item[selectedCategory])"></div>
-                        <div v-else class="no-data">無{{ selectedCategory }}</div>
-                    </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="currentDataTable && currentDataTable.length > 0" class="data-table-container">
+          <div class="table-header">
+            <h3>相關判決書搜尋結果</h3>
+            <p>共 {{ currentDataTable.length }} 筆資料</p>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <tbody>
+                <tr v-for="(item, index) in currentDataTable" :key="index">
+                  <td class="case-cell">
+                      <span class="case-cell-index">第{{ index + 1 }}筆 案號：</span>
+                      <span class="case-cell-content" v-html="item['案號']"></span>
+                      <div class="case-cell-content-wrapper">
+                          <div>【{{ selectedCategory }}內容】</div>
+                          <div v-if="item[selectedCategory]" v-html="formatTableContent(item[selectedCategory])"></div>
+                          <div v-else class="no-data">無{{ selectedCategory }}</div>
+                      </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -145,6 +166,10 @@
 
 <script>
 import { marked } from 'marked';
+import { createAndOpenChatHistoryPdf } from '@/utils/pdfMake';
+
+const API_BASE_URL = 'https://uniformly-neutral-skunk.ngrok-free.app';
+// const API_BASE_URL = 'https://hssai-verdictdb.phys.nthu.edu.tw';
 
 export default {
   name: 'ChatView',
@@ -159,20 +184,38 @@ export default {
       customKeyword: '',
       showCustomInput: false,
       currentKeywordsOptions: null,
-      selectedCategory: null
+      selectedCategory: null,
+      showIntro: true,
+      chatWidth: 50, // percent
+      dragging: false,
+      dragStartX: 0,
+      dragStartWidth: 50
     }
   },
   mounted() {
     this.initializeSession();
     this.addWelcomeMessage();
+    window.addEventListener('mousemove', this.onDrag);
+    window.addEventListener('mouseup', this.stopDrag);
+  },
+  beforeUnmount() {
+    window.removeEventListener('mousemove', this.onDrag);
+    window.removeEventListener('mouseup', this.stopDrag);
   },
   updated() {
     this.scrollToBottom();
   },
+  watch: {
+    conversation() {
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+    }
+  },
   methods: {
     async initializeSession() {
       try {
-        const response = await fetch('https://uniformly-neutral-skunk.ngrok-free.app/init_session', {
+        const response = await fetch(`${API_BASE_URL}/init_session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -238,7 +281,7 @@ export default {
         headers['X-Session-ID'] = this.sessionId;
       }
       
-      const response = await fetch('https://uniformly-neutral-skunk.ngrok-free.app/chat_state', {
+      const response = await fetch(`${API_BASE_URL}/chat_state`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({ text: message })
@@ -311,6 +354,7 @@ export default {
 
             if (data.data_table?.length > 0) {
               this.currentDataTable = data.data_table;
+              this.showIntro = false;
             }
           } catch (e) {
             console.error('Error parsing JSON line:', line, e);
@@ -402,6 +446,37 @@ export default {
           container.scrollTop = container.scrollHeight;
         }
       });
+    },
+    toggleIntro() {
+      this.showIntro = !this.showIntro;
+    },
+    startDrag(e) {
+      this.dragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartWidth = this.chatWidth;
+      document.body.style.cursor = 'col-resize';
+    },
+    onDrag(e) {
+      if (!this.dragging) return;
+      const container = this.$refs.splitContainer;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      let percent = ((e.clientX - rect.left) / rect.width) * 100;
+      percent = Math.max(20, Math.min(80, percent));
+      this.chatWidth = percent;
+    },
+    stopDrag() {
+      if (this.dragging) {
+        this.dragging = false;
+        document.body.style.cursor = '';
+      }
+    },
+    downloadChatHistory() {
+      const messageHistory = this.conversation.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+      createAndOpenChatHistoryPdf(messageHistory, undefined);
     }
   }
 }
@@ -413,25 +488,95 @@ export default {
   margin: 0 auto;
   padding: 20px;
   height: calc(100vh - 280px);
+  min-height: 960px;
   display: flex;
   flex-direction: column;
 }
 
-.chat-header {
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 30px 40px;
-  background-color: aliceblue;
+.split-container {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  position: relative;
 }
-
-.chat-header h1 {
-  margin: 0 0 10px 0;
-  font-size: 2rem;
+.chat-panel {
+  min-width: 260px;
+  max-width: 80%;
+  transition: width 0.2s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 10px 0 0 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  flex-shrink: 0;
+  flex-basis: auto;
 }
-
-.chat-header p {
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
+}
+.info-table-panel {
+  min-width: 320px;
+  max-width: 80%;
+  transition: width 0.2s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  border-radius: 0 10px 10px 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  flex-shrink: 0;
+  flex-basis: auto;
+}
+.introduction-panel {
+  padding: 24px 24px 8px 24px;
+  background: #f0f6ff;
+  border-bottom: 1px solid #e1e5e9;
+}
+.introduction-panel h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.introduction-panel p {
   margin: 0;
-  opacity: 0.9;
+  font-size: 18px;
+  color: #333;
+  line-height: 1.7;
+}
+.chat-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.chat-header {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+.chat-header h4 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .chat-main {
@@ -441,21 +586,12 @@ export default {
   min-height: 0;
 }
 
-.chat-interface {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
 .conversation-container {
-  flex: 1;
+  flex: 1 1 0%;
   overflow-y: auto;
   padding: 20px;
   background: #f8f9fa;
+  min-height: 0;
 }
 
 .message {
@@ -787,6 +923,9 @@ export default {
   padding: 20px;
   background: white;
   border-top: 1px solid #e1e5e9;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 .input-container {
@@ -841,32 +980,28 @@ export default {
   transform: none;
 }
 
-.data-table-container {
-  width: 400px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
 .table-header {
   padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
 }
 
 .table-header h3 {
-  margin: 0 0 5px 0;
   font-size: 1.2rem;
+  width: fit-content;
+  margin-bottom: 0;
 }
 
 .table-header p {
   margin: 0;
   opacity: 0.9;
   font-size: 0.9rem;
+  width: fit-content;
 }
 
 .table-wrapper {
@@ -877,7 +1012,7 @@ export default {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 0.9rem;
 }
 
 .data-table th {
@@ -1024,5 +1159,18 @@ export default {
 .conversation-container::-webkit-scrollbar-thumb:hover,
 .table-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+.splitter {
+  width: 8px;
+  background: #e1e5e9;
+  cursor: col-resize;
+  z-index: 2;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.splitter:hover, .splitter:active {
+  background: #b3b3b3;
 }
 </style> 

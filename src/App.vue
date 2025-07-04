@@ -45,7 +45,7 @@ export default {
     backgroundStyle() {
       // const imagePath = require('@/assets/裁判觀點檢索平台.png');
       // const imagePath = require('@/assets/裁判觀點檢索平台2.png');
-      const imagePath = require('@/assets/裁判觀點檢索平台2黑白.png');
+      const imagePath = require('@/assets/banner.png');
       return {
         backgroundImage: `url(${imagePath})`
       };
