@@ -488,7 +488,7 @@ export default {
   margin: 0 auto;
   padding: 20px;
   height: calc(100vh - 280px);
-  min-height: 960px;
+  min-height: 640px;
   display: flex;
   flex-direction: column;
 }
@@ -980,6 +980,10 @@ export default {
   transform: none;
 }
 
+.data-table-container {
+  height: inherit;
+}
+
 .table-header {
   padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1007,12 +1011,16 @@ export default {
 .table-wrapper {
   flex: 1;
   overflow: auto;
+  height: 100%;
+  padding-bottom: 80px;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  height: 100%;
+  overflow: auto;
 }
 
 .data-table th {
