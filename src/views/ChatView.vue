@@ -611,7 +611,7 @@ export default {
           // $refs for v-for is an array in Vue 2, but a single element in Vue 3
           const el = Array.isArray(row) ? row[0] : row;
           if (el && el.scrollIntoView) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         }
       });
