@@ -38,7 +38,6 @@
                           type="checkbox" 
                           :value="button.value"
                           v-model="selectedKeywords"
-                          @change="updateKeywordSelection"
                         >
                         <div class="custom-checkbox"></div>
                         <span class="checkbox-label">{{ button.label }}</span>
@@ -46,27 +45,17 @@
                     </div>
                     
                     <!-- Custom Keyword Input -->
-                    <div class="custom-keyword-section">
-                      <div v-if="!showCustomInput" class="add-keyword-button" @click="showCustomInput = true">
-                        <span>+</span>
-                      </div>
-                      <div v-else class="keyword-input-container">
-                        <input 
+                    <input 
                           v-model="customKeyword"
-                          @keyup.enter="addCustomKeyword"
-                          placeholder="輸入關鍵字"
+                          placeholder="(若需要請補充其他關鍵字，以逗號分隔)"
                           class="keyword-input"
                           ref="customKeywordInput"
-                        >
-                        <button @click="addCustomKeyword" class="keyword-input-button">確定</button>
-                      </div>
-                    </div>
-                    
+                    />
+                    <div style="height: 16px;"></div>
                     <!-- Action Buttons -->
                     <div class="keywords-actions">
-                      <button @click="selectAllKeywords" class="select-all-button">全部選擇</button>
                       <button @click="confirmKeywords" class="confirm-button" :disabled="selectedKeywords.length === 0">
-                        確認選擇
+                        已確認
                       </button>
                     </div>
                   </div>
@@ -74,6 +63,16 @@
                 
                 <!-- Regular Options (Buttons) -->
                 <div v-else-if="message.options && message.options.buttons" class="message-options">
+                  <!-- Session download button: only show for last bot message in a session -->
+                  <div style="width: 100%;" v-if="isLastBotMessageInSession(index)">
+                      <button
+                        class="option-button"
+                        style="margin-bottom: 8px; border: 1px solid #ea7a66; background: #ea7a66; color: white;"
+                        @click="downloadSession(getSessionIndexByMessage(index))"
+                      >
+                        下載本次對話
+                    </button>
+                  </div>
                   <button 
                     v-for="button in message.options.buttons" 
                     :key="button.value"
@@ -139,18 +138,43 @@
         <div v-if="currentDataTable && currentDataTable.length > 0" class="data-table-container">
           <div class="table-header">
             <h3>相關判決書搜尋結果</h3>
-            <p>共 {{ currentDataTable.length }} 筆資料</p>
+            <div class="index-buttons" style="margin: 8px 0; display: flex; flex-wrap: wrap; gap: 6px;">
+              <template v-for="(btn, btnIdx) in getVisibleIndexButtons(currentIndexBtn, currentDataTable.length)" :key="'index-btn-' + btn + '-' + btnIdx">
+                <button
+                  v-if="btn !== 'ellipsis1' && btn !== 'ellipsis2'"
+                  @click="scrollToRow(btn)"
+                  class="index-btn"
+                  :style="{ minWidth: '32px', height: '32px', borderRadius: '50%', border: '1px solid #667eea', background: '#fff', color: '#667eea', fontWeight: 'bold', cursor: 'pointer', outline: 'none', boxShadow: '0 1px 2px rgba(102,126,234,0.08)' }"
+                  :class="{ active: currentIndexBtn === btn }"
+                >
+                  {{ btn + 1 }}
+                </button>
+                <span v-else class="index-ellipsis">…</span>
+              </template>
+            </div>
           </div>
           <div class="table-wrapper">
             <table class="data-table">
               <tbody>
-                <tr v-for="(item, index) in currentDataTable" :key="index">
+                <tr v-for="(item, index) in currentDataTable" :key="index" :ref="'tableRow' + index">
                   <td class="case-cell">
-                      <span class="case-cell-index">第{{ index + 1 }}筆 案號：</span>
+                      <span class="case-cell-index">編號{{ index + 1 }} 案號：</span>
                       <span class="case-cell-content" v-html="item['案號']"></span>
                       <div class="case-cell-content-wrapper">
                           <div>【{{ selectedCategory }}內容】</div>
-                          <div v-if="item[selectedCategory]" v-html="formatTableContent(item[selectedCategory])"></div>
+                          <div v-if="item[selectedCategory]">
+                            <div
+                              :ref="'truncatedContent' + index"
+                              class="truncate-3-lines"
+                              v-html="formatTableContent(item[selectedCategory])"
+                            ></div>
+                            <a
+                              v-if="truncatedStates[index]"
+                              href="#"
+                              @click.prevent="openContentModal(item[selectedCategory])"
+                              style="color: #667eea; cursor: pointer;"
+                            >顯示全部</a>
+                          </div>
                           <div v-else class="no-data">無{{ selectedCategory }}</div>
                       </div>
                   </td>
@@ -160,6 +184,13 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- Modal for full content -->
+  <div v-if="showContentModal" class="modal-overlay" @click.self="closeContentModal">
+    <div class="modal-content">
+      <button class="modal-close" @click="closeContentModal">關閉</button>
+      <div v-html="formatTableContent(modalContent)"></div>
     </div>
   </div>
 </template>
@@ -189,7 +220,12 @@ export default {
       chatWidth: 50, // percent
       dragging: false,
       dragStartX: 0,
-      dragStartWidth: 50
+      dragStartWidth: 50,
+      chatSessions: [[]], // Track all chat sessions, each is an array of messages
+      showContentModal: false, // Modal state for full content
+      modalContent: '', // Content to show in modal
+      truncatedStates: {}, // Track which rows are visually truncated
+      currentIndexBtn: 0, // Track the current selected index for index-buttons
     }
   },
   mounted() {
@@ -210,6 +246,15 @@ export default {
       this.$nextTick(() => {
         this.scrollToBottom();
       });
+    },
+    currentDataTable(newVal) {
+      if (Array.isArray(newVal)) {
+        this.$nextTick(() => {
+          newVal.forEach((item, idx) => {
+            this.checkTruncation(idx);
+          });
+        });
+      }
     }
   },
   methods: {
@@ -234,39 +279,42 @@ export default {
     },
 
     addWelcomeMessage() {
-      this.conversation.push({
+      const welcomeMsg = {
         type: 'bot',
-        content: '歡迎使用法院觀點問答機器人，我將協助你釐清刑法判決書相關的問題！本系統中將整理使用者問答過程，與刑事判決書中的事實區塊匹配，並藉由AI模型提取法院觀點 (涵攝、見解)作為回答的參考！\n接下來，請選擇您希望搜尋的內容：',
+        content: '您好，我是您的AI裁判書助手，可以透過自然語言的連續互動，協助您快速的解決關於法院裁判書內容的問題。<br>目前我有「類案事實搜尋」與「法院見解分析」兩大功能，請點擊以下的選項來開啟我們的討論吧！',
         options: {
           option_type: 'category_options',
           buttons: [
-            { value: '事實搜尋', label: '事實搜尋' },
-            { value: '見解討論', label: '見解討論' }
+            { value: '事實搜尋', label: '類案事實搜尋' },
+            { value: '見解討論', label: '法院見解分析' }
           ]
         }
-      });
+      };
+      this.conversation.push(welcomeMsg);
+      this.chatSessions[this.chatSessions.length - 1].push(welcomeMsg);
     },
 
     async sendMessage() {
       if (!this.userInput.trim() || this.loading) return;
-      
       const userMessage = this.userInput.trim();
-      this.conversation.push({
+      const userMsgObj = {
         type: 'user',
         content: userMessage
-      });
-      
+      };
+      this.conversation.push(userMsgObj);
+      this.chatSessions[this.chatSessions.length - 1].push(userMsgObj);
       this.userInput = '';
       this.loading = true;
-      
       try {
         await this.callChatAPI(userMessage);
       } catch (error) {
         console.error('Error sending message:', error);
-        this.conversation.push({
+        const errorMsg = {
           type: 'bot',
           content: '抱歉，發生錯誤，請稍後再試。'
-        });
+        };
+        this.conversation.push(errorMsg);
+        this.chatSessions[this.chatSessions.length - 1].push(errorMsg);
       } finally {
         this.loading = false;
       }
@@ -300,6 +348,7 @@ export default {
       let accumulatedContent = '';
 
       let reading = true;
+      let isChatEnd = false;
       while (reading) {
         const { done, value } = await reader.read();
         if (done) {
@@ -331,9 +380,11 @@ export default {
                 currentMessage = {
                   type: 'bot',
                   content: data.content,
-                  options: data.options
+                  options: data.options,
+                  is_chat_end: data.is_chat_end // Store is_chat_end on the message
                 };
                 this.conversation.push(currentMessage);
+                this.chatSessions[this.chatSessions.length - 1].push(currentMessage);
                 accumulatedContent = data.content;
               } else {
                 // Accumulate content
@@ -344,10 +395,9 @@ export default {
 
             if (data.options && data.options.buttons && data.options.buttons.length > 0) {
               currentMessage.options = data.options;
-              
               // Handle keywords options
               if (data.options.option_type === 'keywords_options') {
-                this.selectedKeywords = [];
+                this.selectedKeywords = data.options.buttons.map(b => b.value); // select all by default
                 this.currentKeywordsOptions = data.options;
               }
             }
@@ -355,6 +405,19 @@ export default {
             if (data.data_table?.length > 0) {
               this.currentDataTable = data.data_table;
               this.showIntro = false;
+            }
+            // Handle is_chat_end
+            if (typeof data.is_chat_end !== 'undefined') {
+              isChatEnd = data.is_chat_end;
+              if (isChatEnd) {
+                // Push current conversation as a session and start a new one
+                if (this.conversation.length > 0) {
+                  // Only push if not already pushed
+                  if (this.chatSessions[this.chatSessions.length - 1].length > 0) {
+                    this.chatSessions.push([]);
+                  }
+                }
+              }
             }
           } catch (e) {
             console.error('Error parsing JSON line:', line, e);
@@ -370,6 +433,17 @@ export default {
             accumulatedContent += data.content;
             currentMessage.content = accumulatedContent;
           }
+          // Handle is_chat_end in last buffer
+          if (typeof data.is_chat_end !== 'undefined') {
+            isChatEnd = data.is_chat_end;
+            if (isChatEnd) {
+              if (this.conversation.length > 0) {
+                if (this.chatSessions[this.chatSessions.length - 1].length > 0) {
+                  this.chatSessions.push([]);
+                }
+              }
+            }
+          }
         } catch (e) {
           console.error('Error parsing final buffer:', e);
         }
@@ -378,19 +452,24 @@ export default {
 
     handleOptionClick(value) {
       // Set selectedCategory based on the button value
-      if (value === '事實搜尋') {
+      let selectedInput = '';
+      if (value === '事實搜尋' || value === '我要作類案事實搜尋') {
         this.selectedCategory = '事實';
-      } else if (value === '見解討論') {
+        selectedInput = '我要作類案事實搜尋'
+        // clear currentDataTable
+        this.currentDataTable = null;
+      } else if (value === '見解討論' || value === '我要作法院見解分析') {
         this.selectedCategory = '見解';
+        selectedInput = '我要作法院見解分析'
+        // clear currentDataTable
+        this.currentDataTable = null;
+      }
+      else {
+        selectedInput = value;
       }
       
-      this.userInput = value;
+      this.userInput = selectedInput;
       this.sendMessage();
-    },
-
-    updateKeywordSelection() {
-      // This method is called when checkboxes change
-      console.log('Selected keywords:', this.selectedKeywords);
     },
 
     addCustomKeyword() {
@@ -423,7 +502,10 @@ export default {
 
     confirmKeywords() {
       if (this.selectedKeywords.length > 0) {
-        const keywordString = this.selectedKeywords.join('、');
+        let keywordString = this.selectedKeywords.join(',');
+        if (this.customKeyword.trim()) {
+          keywordString += `,${this.customKeyword.trim()}`;
+        }
         this.handleOptionClick(keywordString);
       }
     },
@@ -477,7 +559,82 @@ export default {
         content: msg.content
       }));
       createAndOpenChatHistoryPdf(messageHistory, undefined);
-    }
+    },
+    // Add a new method for per-session download
+    downloadSession(sessionIdx) {
+      const session = this.chatSessions[sessionIdx];
+      if (!session || session.length === 0) return;
+      const messageHistory = session.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+      createAndOpenChatHistoryPdf(messageHistory, undefined);
+    },
+    // Add helper methods to determine last bot message in a session and session index
+    isLastBotMessageInSession(messageIdx) {
+      // Only show download button for bot messages with is_chat_end === true
+      const msg = this.conversation[messageIdx];
+      return msg && msg.type === 'bot' && msg.is_chat_end === true;
+    },
+    getSessionIndexByMessage(messageIdx) {
+      let count = 0;
+      for (let i = 0; i < this.chatSessions.length; i++) {
+        count += this.chatSessions[i].length;
+        if (messageIdx < count) {
+          return i;
+        }
+      }
+      return 0;
+    },
+    checkTruncation(index) {
+      this.$nextTick(() => {
+        const el = this.$refs[`truncatedContent${index}`];
+        if (el && (Array.isArray(el) ? el[0] : el)) {
+          const dom = Array.isArray(el) ? el[0] : el;
+          this.truncatedStates[index] = dom.scrollHeight > dom.clientHeight + 1; // +1 for rounding
+        }
+      });
+    },
+    openContentModal(content) {
+      this.modalContent = content;
+      this.showContentModal = true;
+    },
+    closeContentModal() {
+      this.showContentModal = false;
+      this.modalContent = '';
+    },
+    scrollToRow(index) {
+      this.currentIndexBtn = index;
+      this.$nextTick(() => {
+        const row = this.$refs['tableRow' + index];
+        if (row) {
+          // $refs for v-for is an array in Vue 2, but a single element in Vue 3
+          const el = Array.isArray(row) ? row[0] : row;
+          if (el && el.scrollIntoView) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      });
+    },
+    getVisibleIndexButtons(idx, total) {
+      // For mobile: show first, last, and 1 before/after current, with ellipsis
+      if (window.innerWidth > 1219) {
+        return Array.from({ length: total }, (_, i) => i);
+      }
+      const result = [];
+      if (total <= 7) {
+        for (let i = 0; i < total; i++) result.push(i);
+        return result;
+      }
+      result.push(0);
+      if (idx > 2) result.push('ellipsis1');
+      for (let i = Math.max(1, idx - 1); i <= Math.min(total - 2, idx + 1); i++) {
+        if (i !== 0 && i !== total - 1) result.push(i);
+      }
+      if (idx < total - 3) result.push('ellipsis2');
+      result.push(total - 1);
+      return result;
+    },
   }
 }
 </script>
@@ -828,6 +985,7 @@ export default {
   border: 2px solid #e1e5e9;
   border-radius: 20px;
   font-size: 14px;
+  width: 100%;
 }
 
 .keyword-input:focus {
@@ -854,6 +1012,8 @@ export default {
   display: flex;
   gap: 10px;
   align-items: center;
+  justify-content: end;
+  padding: 0 20px;
 }
 
 .select-all-button {
@@ -872,18 +1032,27 @@ export default {
 }
 
 .confirm-button {
-  padding: 8px 16px;
-  background: #D84040;
-  color: white;
-  border: none;
-  border-radius: 20px;
+  background-color: #ea7a66;
+  width: 70px;
+  height: 40px;
+  display: inline-block;
+  position: relative;
+  border-radius: 8px 0 0 8px;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.3s ease;
+  border: none;
+  color: white;
 }
-
-.confirm-button:hover:not(:disabled) {
-  background: #45a049;
+.confirm-button:after {
+  color: #ea7a66;
+  border-left: 28px solid;
+  border-top: 30px solid transparent;
+  border-bottom: 30px solid transparent;
+  display: inline-block;
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -9px;
 }
 
 .confirm-button:disabled {
@@ -982,11 +1151,15 @@ export default {
 
 .data-table-container {
   height: inherit;
+  position: relative;
 }
 
 .table-header {
   padding: 20px;
+  position: sticky;
+  top: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: 2;
   color: white;
   text-align: center;
   display: flex;
@@ -1009,10 +1182,10 @@ export default {
 }
 
 .table-wrapper {
-  flex: 1;
-  overflow: auto;
-  height: 100%;
-  padding-bottom: 80px;
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  position: relative;
 }
 
 .data-table {
@@ -1115,36 +1288,51 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .chat-container {
-    padding: 10px;
-    height: calc(100vh - 100px);
-  }
-  
-  .chat-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .message-content {
-    max-width: 85%;
-  }
-  
-  .input-container {
+  .split-container {
     flex-direction: column;
-    align-items: stretch;
+    height: auto;
+    min-height: 0;
   }
-  
-  .send-button {
-    align-self: flex-end;
-    width: fit-content;
+  .chat-panel {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
   }
-  
-  .data-table {
-    font-size: 11px;
+  .info-table-panel {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
   }
-  
-  .data-table th,
-  .data-table td {
-    padding: 6px;
+  .splitter {
+    display: none;
+  }
+  .index-buttons {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 2px;
+    padding-bottom: 4px;
+  }
+  .index-btn {
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 13px;
+    border-radius: 50%;
+    padding: 0;
+  }
+  .index-ellipsis {
+    display: inline-block;
+    min-width: 20px;
+    text-align: center;
+    color: #667eea;
+    font-weight: bold;
+    font-size: 18px;
+    background: transparent;
+    border: none;
+    pointer-events: none;
   }
 }
 
@@ -1180,5 +1368,53 @@ export default {
 
 .splitter:hover, .splitter:active {
   background: #b3b3b3;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: white;
+  padding: 55px 32px 32px 32px;
+  border-radius: 12px;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ea7a66;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.truncate-3-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+  min-height: 1.5em;
+  max-height: 4.5em; /* 3 lines x 1.5em line-height */
+  line-height: 1.5em;
+}
+.index-btn {
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.index-btn:hover, .index-btn:focus {
+  background: #667eea;
+  color: #fff;
+  border: 1px solid #667eea;
 }
 </style> 
