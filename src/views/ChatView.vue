@@ -6,13 +6,22 @@
         <div class="chat-header">
           <h4>AI裁判書助手</h4>
           <div class="chat-toolbar">
-          <button class="icon-btn" @click="toggleIntro" title="顯示/隱藏歡迎">
-            <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2" fill="none"/><text x="12" y="17" text-anchor="middle" font-size="14" fill="#fff">i</text></svg>
-          </button>
-          <button class="icon-btn" @click="downloadChatHistory" title="下載對話紀錄 PDF">
-            <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="17" width="16" height="4" rx="2" fill="#fff"/></svg>
-          </button>
-        </div>
+            <el-tooltip content="重新開始對話" placement="bottom">
+              <button class="icon-btn" @click="restartChat">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 13.5C19 17.6421 15.6421 21 11.5 21C7.35786 21 4 17.6421 4 13.5C4 9.35786 7.35786 6 11.5 6H20M20 6L17 3M20 6L17 9" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+              </button>
+            </el-tooltip>
+            <el-tooltip content="顯示/隱藏說明" placement="bottom">
+              <button class="icon-btn" @click="toggleIntro">
+                <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2" fill="none"/><text x="12" y="17" text-anchor="middle" font-size="14" fill="#fff">i</text></svg>
+              </button>
+            </el-tooltip>
+            <el-tooltip content="下載對話紀錄 PDF" placement="bottom">
+              <button class="icon-btn" @click="downloadChatHistory">
+                <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="17" width="16" height="4" rx="2" fill="#fff"/></svg>
+              </button>
+            </el-tooltip>
+          </div>
         </div>
         <div class="chat-interface">
           <div class="conversation-container" ref="conversationContainer">
@@ -70,7 +79,7 @@
                         style="margin-bottom: 8px; border: 1px solid #ea7a66; background: #ea7a66; color: white;"
                         @click="downloadSession(getSessionIndexByMessage(index))"
                       >
-                        下載本次對話
+                      下載此次紀錄
                     </button>
                   </div>
                   <button 
@@ -198,12 +207,14 @@
 <script>
 import { marked } from 'marked';
 import { createAndOpenChatHistoryPdf } from '@/utils/pdfMake';
+import { ElTooltip } from 'element-plus';
 
-const API_BASE_URL = 'https://uniformly-neutral-skunk.ngrok-free.app';
-// const API_BASE_URL = 'https://hssai-verdictdb.phys.nthu.edu.tw';
+// const API_BASE_URL = 'https://uniformly-neutral-skunk.ngrok-free.app';
+const API_BASE_URL = 'https://hssai-verdictdb.phys.nthu.edu.tw';
 
 export default {
   name: 'ChatView',
+  components: { ElTooltip },
   data() {
     return {
       conversation: [],
@@ -221,7 +232,7 @@ export default {
       dragging: false,
       dragStartX: 0,
       dragStartWidth: 50,
-      chatSessions: [[]], // Track all chat sessions, each is an array of messages
+      chatSessions: [{ messages: [], dataTable: null, category: null }], // Track all chat sessions, each is an object with messages and dataTable
       showContentModal: false, // Modal state for full content
       modalContent: '', // Content to show in modal
       truncatedStates: {}, // Track which rows are visually truncated
@@ -279,9 +290,9 @@ export default {
     },
 
     addWelcomeMessage() {
-      const welcomeMsg = {
+      let welcomeMsg = {
         type: 'bot',
-        content: '您好，我是您的AI裁判書助手，可以透過自然語言的連續互動，協助您快速的解決關於法院裁判書內容的問題。<br>目前我有「類案事實搜尋」與「法院見解分析」兩大功能，請點擊以下的選項來開啟我們的討論吧！',
+        content: `您好，我是您的AI裁判書助手，可以透過自然語言的連續互動，協助您快速的解決關於法院裁判書內容的問題。<br>目前我有「類案事實搜尋」與「法院見解分析」兩大功能，請點擊以下的選項來開啟我們的討論吧！`,
         options: {
           option_type: 'category_options',
           buttons: [
@@ -291,7 +302,9 @@ export default {
         }
       };
       this.conversation.push(welcomeMsg);
-      this.chatSessions[this.chatSessions.length - 1].push(welcomeMsg);
+      welcomeMsg.content = welcomeMsg.content.replace('<br>','');
+      this.chatSessions[this.chatSessions.length - 1].messages.push(welcomeMsg);
+      // Do not set category here, only after user selects
     },
 
     async sendMessage() {
@@ -302,7 +315,7 @@ export default {
         content: userMessage
       };
       this.conversation.push(userMsgObj);
-      this.chatSessions[this.chatSessions.length - 1].push(userMsgObj);
+      this.chatSessions[this.chatSessions.length - 1].messages.push(userMsgObj);
       this.userInput = '';
       this.loading = true;
       try {
@@ -314,7 +327,7 @@ export default {
           content: '抱歉，發生錯誤，請稍後再試。'
         };
         this.conversation.push(errorMsg);
-        this.chatSessions[this.chatSessions.length - 1].push(errorMsg);
+        this.chatSessions[this.chatSessions.length - 1].messages.push(errorMsg);
       } finally {
         this.loading = false;
       }
@@ -384,7 +397,7 @@ export default {
                   is_chat_end: data.is_chat_end // Store is_chat_end on the message
                 };
                 this.conversation.push(currentMessage);
-                this.chatSessions[this.chatSessions.length - 1].push(currentMessage);
+                this.chatSessions[this.chatSessions.length - 1].messages.push(currentMessage);
                 accumulatedContent = data.content;
               } else {
                 // Accumulate content
@@ -413,8 +426,12 @@ export default {
                 // Push current conversation as a session and start a new one
                 if (this.conversation.length > 0) {
                   // Only push if not already pushed
-                  if (this.chatSessions[this.chatSessions.length - 1].length > 0) {
-                    this.chatSessions.push([]);
+                  if (this.chatSessions[this.chatSessions.length - 1].messages.length > 0) {
+                    // Save currentDataTable and category to session
+                    this.chatSessions[this.chatSessions.length - 1].dataTable = this.currentDataTable;
+                    this.chatSessions[this.chatSessions.length - 1].category = this.selectedCategory;
+                    // Start a new session object
+                    this.chatSessions.push({ messages: [], dataTable: null, category: null });
                   }
                 }
               }
@@ -438,10 +455,14 @@ export default {
             isChatEnd = data.is_chat_end;
             if (isChatEnd) {
               if (this.conversation.length > 0) {
-                if (this.chatSessions[this.chatSessions.length - 1].length > 0) {
-                  this.chatSessions.push([]);
+                if (this.chatSessions[this.chatSessions.length - 1].messages.length > 0) {
+                  this.chatSessions[this.chatSessions.length - 1].dataTable = this.currentDataTable;
+                  this.chatSessions[this.chatSessions.length - 1].category = this.selectedCategory;
+                  this.chatSessions.push({ messages: [], dataTable: null, category: null });
                 }
               }
+              // this.currentDataTable = null;
+              this.selectedCategory = null;
             }
           }
         } catch (e) {
@@ -457,12 +478,16 @@ export default {
         this.selectedCategory = '事實';
         selectedInput = '我要作類案事實搜尋'
         // clear currentDataTable
-        this.currentDataTable = null;
+        // this.currentDataTable = null;
+        // Set category for current session
+        this.chatSessions[this.chatSessions.length - 1].category = '事實';
       } else if (value === '見解討論' || value === '我要作法院見解分析') {
         this.selectedCategory = '見解';
         selectedInput = '我要作法院見解分析'
         // clear currentDataTable
-        this.currentDataTable = null;
+        // this.currentDataTable = null;
+        // Set category for current session
+        this.chatSessions[this.chatSessions.length - 1].category = '見解';
       }
       else {
         selectedInput = value;
@@ -554,21 +579,43 @@ export default {
       }
     },
     downloadChatHistory() {
-      const messageHistory = this.conversation.map(msg => ({
-        role: msg.type === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      }));
-      createAndOpenChatHistoryPdf(messageHistory, undefined);
+      // Download all sessions, each with its dataTable and category
+      // Merge all sessions into one PDF content
+      const allSessions = this.chatSessions.filter(s => s.messages && s.messages.length > 0);
+      // Compose a single messageHistory array with session breaks
+      let mergedMessages = [];
+      allSessions.forEach((session, idx) => {
+        if (idx > 0) {
+          mergedMessages.push({ role: 'system', content: `--- 分隔線：第${idx+1}次對話 ---` });
+        }
+        session.messages.forEach(msg => {
+          mergedMessages.push({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          });
+        });
+        // Add a marker for the dataTable and category for this session
+        if (session.dataTable && session.dataTable.length > 0) {
+          mergedMessages.push({
+            role: 'system',
+            content: '__SESSION_DATA_TABLE__',
+            dataTable: session.dataTable,
+            category: session.category
+          });
+        }
+      });
+      // Use a helper to generate the PDF with all tables
+      createAndOpenChatHistoryPdf(mergedMessages, undefined);
     },
     // Add a new method for per-session download
     downloadSession(sessionIdx) {
       const session = this.chatSessions[sessionIdx];
-      if (!session || session.length === 0) return;
-      const messageHistory = session.map(msg => ({
+      if (!session || !session.messages || session.messages.length === 0) return;
+      const messageHistory = session.messages.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
         content: msg.content
       }));
-      createAndOpenChatHistoryPdf(messageHistory, undefined);
+      createAndOpenChatHistoryPdf(messageHistory, undefined, session.dataTable, session.category);
     },
     // Add helper methods to determine last bot message in a session and session index
     isLastBotMessageInSession(messageIdx) {
@@ -579,7 +626,7 @@ export default {
     getSessionIndexByMessage(messageIdx) {
       let count = 0;
       for (let i = 0; i < this.chatSessions.length; i++) {
-        count += this.chatSessions[i].length;
+        count += this.chatSessions[i].messages.length;
         if (messageIdx < count) {
           return i;
         }
@@ -634,6 +681,32 @@ export default {
       if (idx < total - 3) result.push('ellipsis2');
       result.push(total - 1);
       return result;
+    },
+    restartChat() {
+      // If current conversation is not empty, save it as a session
+      if (this.conversation.length > 0) {
+        this.chatSessions[this.chatSessions.length - 1].messages = [...this.conversation];
+        this.chatSessions[this.chatSessions.length - 1].dataTable = this.currentDataTable;
+        this.chatSessions[this.chatSessions.length - 1].category = this.selectedCategory;
+      }
+      // Start a new session
+      this.userInput = '';
+      this.loading = false;
+      this.currentDataTable = null;
+      this.selectedKeywords = [];
+      this.customKeyword = '';
+      this.showCustomInput = false;
+      this.currentKeywordsOptions = null;
+      this.selectedCategory = null;
+      this.showIntro = true;
+      this.chatSessions.push({ messages: [], dataTable: null, category: null }); // Add a new empty session
+      this.showContentModal = false;
+      this.modalContent = '';
+      this.truncatedStates = {};
+      this.currentIndexBtn = 0;
+      // Re-initialize session and show welcome message
+      this.initializeSession();
+      this.addWelcomeMessage();
     },
   }
 }
