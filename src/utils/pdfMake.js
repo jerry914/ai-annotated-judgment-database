@@ -107,7 +107,7 @@ export async function createAndOpenPredictResultPdf(
         styles: pdfStyles
       }
     )
-    .open()
+    .download(`AI輔助親權裁判預測系統_${pdfTitle}_${new Date().toISOString().split('T')[0]}.pdf`)
 }
 
 export async function createAndOpenChatHistoryPdf(
@@ -320,5 +320,5 @@ export async function createAndOpenChatHistoryPdf(
         styles: pdfStyles
       }
     )
-    .open()
+    .download(`AI裁判書助手_對話記錄_${new Date().toISOString().split('T')[0]}.pdf`)
 }

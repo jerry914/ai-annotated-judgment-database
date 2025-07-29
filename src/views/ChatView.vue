@@ -209,8 +209,8 @@ import { marked } from 'marked';
 import { createAndOpenChatHistoryPdf } from '@/utils/pdfMake';
 import { ElTooltip } from 'element-plus';
 
-// const API_BASE_URL = 'https://uniformly-neutral-skunk.ngrok-free.app';
-const API_BASE_URL = 'https://hssai-verdictdb.phys.nthu.edu.tw';
+const API_BASE_URL = 'https://uniformly-neutral-skunk.ngrok-free.app';
+// const API_BASE_URL = 'https://hssai-verdictdb.phys.nthu.edu.tw';
 
 export default {
   name: 'ChatView',
