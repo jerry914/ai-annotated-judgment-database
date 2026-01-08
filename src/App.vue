@@ -1,5 +1,8 @@
 <template>
   <div class="main-container">
+    <div class="notification-bar">
+      本系統AI助手的功能正在進行更新與硬體升級，暫時無法運作，還請見諒。
+    </div>
     <div class="jump-bar" :style="backgroundStyle"></div>
     <div class="menu-bar">
       <ul class="menu">
@@ -108,6 +111,17 @@ nav a {
 }
 .main-container {
   min-height: calc( 100vh - 100px );
+}
+.notification-bar {
+  background-color: #ffcdd9;
+  border-bottom: 1px solid #ea688d;
+  color: #9c0000;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
 }
 .jump-bar {
   height: 120px;
