@@ -1,7 +1,7 @@
 <template>
   <div class="search-page">
     <div class="search-layout">
-      <FilterSidebar v-model="filters" @submit="doSearch" @reset="resetFilters" />
+      <FilterSidebar v-model="filters" :aggregations="aggregations" @submit="doSearch" @reset="resetFilters" />
 
       <div class="search-main">
         <h1 class="page-title">刑事見解檢索頁面</h1>
@@ -42,15 +42,18 @@
                 <td class="cell-num">{{ idx + 1 + (page - 1) * pageSize }}</td>
                 <td class="cell-case">
                   <router-link
-                    v-if="item.JID"
-                    :to="{ name: 'judgment', params: { jid: item.JID } }"
+                    v-if="extractJid(item)"
+                    :to="{ name: 'judgment', params: { jid: extractJid(item) } }"
                     class="case-link"
                   >{{ item.case_num }}</router-link>
                   <span v-else>{{ item.case_num }}</span>
                 </td>
                 <td class="cell-date">{{ formatDate(item.jud_date) }}</td>
                 <td>{{ item.case_type }}</td>
-                <td class="cell-text">{{ truncate(item.syllabus, 80) }}</td>
+                <td class="cell-text">
+                  {{ truncate(item.syllabus, 80) }}
+                  <a v-if="item.syllabus && item.syllabus.length > 80" href="#" class="read-more" @click.prevent="openPreview(item, 'syllabus')">閱讀全文</a>
+                </td>
                 <td class="cell-text">
                   {{ truncate(item.opinion || item.sentence, 100) }}
                   <a v-if="(item.opinion || item.sentence || '').length > 100" href="#" class="read-more" @click.prevent="openPreview(item)">閱讀全文</a>
@@ -84,8 +87,8 @@
           <button class="dialog-close" @click="previewItem = null">×</button>
         </div>
         <div class="dialog-body">
-          <h4>見解</h4>
-          <p class="dialog-text">{{ previewItem.opinion || previewItem.sentence }}</p>
+          <h4>{{ previewField === 'syllabus' ? '主文' : '見解' }}</h4>
+          <p class="dialog-text">{{ previewField === 'syllabus' ? previewItem.syllabus : (previewItem.opinion || previewItem.sentence) }}</p>
         </div>
       </div>
     </div>
@@ -112,25 +115,18 @@ export default {
       total: 0,
       totalPages: 0,
       previewItem: null,
+      previewField: 'opinion',
       summaryStats: [
         { label: '判決（篇數）', value: null },
         { label: '被告（人數）', value: null },
         { label: '犯罪數（筆數）', value: null },
         { label: '犯罪法條總數（條數）', value: null },
       ],
+      aggregations: {},
     }
   },
   async mounted() {
-    try {
-      const resp = await axios.get('/api/stats/summary');
-      const d = resp.data;
-      this.summaryStats = [
-        { label: '判決（篇數）', value: d.judgments },
-        { label: '被告（人數）', value: d.defendants },
-        { label: '犯罪數（筆數）', value: d.crimes },
-        { label: '犯罪法條總數（條數）', value: d.unique_laws },
-      ];
-    } catch { /* stats not available */ }
+    this.fetchFilteredStats();
     const jids = this.$route.query.jids;
     if (jids) this.doSearchByJids(jids);
   },
@@ -147,35 +143,22 @@ export default {
       if (this.filters.probation?.length) body.prob_granted = this.filters.probation;
       if (this.filters.recidivism?.length) body.recidivist = this.filters.recidivism;
       if (this.filters.crimeArticle?.length) body.conv_law = this.filters.crimeArticle;
-      if (this.filters.aggravation?.length) body.aggravation = this.filters.aggravation[0];
-      if (this.filters.mitigation?.length) body.mitigation = this.filters.mitigation[0];
       return body;
     },
     async fetchFilteredStats() {
       try {
         const body = this.buildStatsBody();
-        const hasFilter = Object.keys(body).length > 0;
-        if (!hasFilter) {
-          const resp = await axios.get('/api/stats/summary');
-          const d = resp.data;
-          this.summaryStats = [
-            { label: '判決（篇數）', value: d.judgments },
-            { label: '被告（人數）', value: d.defendants },
-            { label: '犯罪數（筆數）', value: d.crimes },
-            { label: '犯罪法條總數（條數）', value: d.unique_laws },
-          ];
-        } else {
-          body.page = 1;
-          body.size = 1;
-          const resp = await axios.post('/api/stats/query', body);
-          const agg = resp.data.aggregations || {};
-          this.summaryStats = [
-            { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
-            { label: '被告（人數）', value: resp.data.meta?.total || 0 },
-            { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
-            { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
-          ];
-        }
+        body.page = 1;
+        body.size = 1;
+        const resp = await axios.post('/api/stats/query', body);
+        const agg = resp.data.aggregations || {};
+        this.aggregations = agg;
+        this.summaryStats = [
+          { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
+          { label: '被告（人數）', value: resp.data.meta?.total || 0 },
+          { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
+          { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
+        ];
       } catch { /* stats not available */ }
     },
     async doSearch() {
@@ -244,7 +227,18 @@ export default {
       if (!text) return '';
       return text.length > len ? text.slice(0, len) + '...' : text;
     },
-    openPreview(item) { this.previewItem = item; },
+    extractJid(item) {
+      if (item.JID) return item.JID;
+      if (item.jud_url) {
+        const m = item.jud_url.match(/[?&]id=([^&]+)/);
+        if (m) return decodeURIComponent(m[1]);
+      }
+      return null;
+    },
+    openPreview(item, field = 'opinion') {
+      this.previewItem = item;
+      this.previewField = field;
+    },
     downloadCSV() {
       const header = '序號,案號,日期,案件別,主文,見解\n';
       const rows = this.results.map((r, i) =>

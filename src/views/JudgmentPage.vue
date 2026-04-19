@@ -5,7 +5,7 @@
       <label class="search-label">搜尋判決書</label>
       <div class="search-input-row">
         <input v-model="searchQuery" type="text" class="search-input"
-          placeholder="請輸入案號搜尋，例如：臺灣臺北地方法院刑事判決 108年度易字第100號"
+          placeholder="HLDM,107,訴,286,20200122,2"
           @keyup.enter="doSearch" />
         <button class="search-btn" @click="doSearch">搜尋</button>
       </div>
@@ -117,6 +117,10 @@
 
         <!-- Margin Notes (Google Docs style) -->
         <div class="margin-col">
+          <div v-if="!highlights.length" class="margin-hint">
+            <div class="margin-hint-icon">&#9998;</div>
+            <p class="margin-hint-text">選取判決書內文即可新增標註筆記，標註與筆記會顯示在此欄位。</p>
+          </div>
           <div v-for="h in highlights" :key="h.id"
             class="margin-note" :class="{ 'margin-note--active': activeHlId === h.id }"
             :style="{ top: (h.topPx || 0) + 'px' }"
@@ -274,6 +278,14 @@ export default {
         lines.push('');
       }
       lines.push('== 判決書全文 ==', this.fulltext || j?.fact_text || '');
+      if (j?.opinions?.length) {
+        lines.push('', '== 法院見解 (AI 標註) ==');
+        j.opinions.forEach((op, i) => {
+          const tags = [op.level1_label, ...Object.keys(op.level2_labels || {}).filter(k => op.level2_labels[k] === '1').map(k => k.replace('level2_', ''))].filter(Boolean).join('、');
+          lines.push(`${i+1}. [${tags}]`);
+          lines.push(`   ${op.sentence}`);
+        });
+      }
       if (this.highlights.length) {
         lines.push('', '== 標註與筆記 ==');
         this.highlights.forEach((h, i) => { lines.push(`${i+1}. 「${h.text}」`); if (h.comment) lines.push(`   筆記：${h.comment}`); });
@@ -335,6 +347,9 @@ export default {
 .doc-area { position: relative; display: flex; align-items: flex-start; }
 .judgment-text-panel { flex: 1; min-width: 0; background: var(--color-surface); border-radius: var(--radius-lg); padding: 2rem 2.5rem; box-shadow: var(--shadow-soft); min-height: 400px; margin-right: 260px; }
 .margin-col { position: absolute; top: 0; right: 0; width: 240px; }
+.margin-hint { padding: 1.25rem 1rem; background: var(--color-surface); border-radius: var(--radius-default); box-shadow: var(--shadow-soft); text-align: center; }
+.margin-hint-icon { font-size: 1.5rem; margin-bottom: .5rem; opacity: .5; }
+.margin-hint-text { font-size: 13px; line-height: 1.7; color: var(--color-muted); margin: 0; }
 
 /* Document */
 .doc-title { font-size: 1.2rem; font-weight: 700; text-align: center; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,.08); }

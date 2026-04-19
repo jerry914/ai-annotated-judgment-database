@@ -27,7 +27,6 @@ export default {
         { path: '/opinion-search', label: '見解檢索' },
         { path: '/judgment', label: '裁判書筆記' },
         { path: '/discussion', label: 'AI助手' },
-        { path: '/search', label: '檢索平台' },
         { path: '/about', label: '使用說明' },
         { path: '/members', label: '開發團隊' },
       ],

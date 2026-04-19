@@ -2,7 +2,7 @@
   <div class="search-page">
     <div class="search-layout">
       <!-- Left: Shared Filter Sidebar -->
-      <FilterSidebar v-model="filters" @submit="doSearch" @reset="resetFilters" />
+      <FilterSidebar v-model="filters" :aggregations="aggregations" @submit="doSearch" @reset="resetFilters" />
 
       <!-- Right: Main Content -->
       <div class="search-main">
@@ -49,15 +49,18 @@
                 <td class="cell-num">{{ idx + 1 + (page - 1) * pageSize }}</td>
                 <td class="cell-case">
                   <router-link
-                    v-if="item.JID"
-                    :to="{ name: 'judgment', params: { jid: item.JID } }"
+                    v-if="extractJid(item)"
+                    :to="{ name: 'judgment', params: { jid: extractJid(item) } }"
                     class="case-link"
                   >{{ item.case_num }}</router-link>
                   <span v-else>{{ item.case_num }}</span>
                 </td>
                 <td class="cell-date">{{ formatDate(item.jud_date) }}</td>
                 <td>{{ item.case_type }}</td>
-                <td class="cell-text">{{ truncate(item.syllabus, 80) }}</td>
+                <td class="cell-text">
+                  {{ truncate(item.syllabus, 80) }}
+                  <a v-if="item.syllabus && item.syllabus.length > 80" href="#" class="read-more" @click.prevent="openPreview(item, 'syllabus')">閱讀全文</a>
+                </td>
                 <td class="cell-text">
                   {{ truncate(item.fact_text, 100) }}
                   <a v-if="item.fact_text && item.fact_text.length > 100" href="#" class="read-more" @click.prevent="openPreview(item)">閱讀全文</a>
@@ -94,8 +97,8 @@
           <button class="dialog-close" @click="previewItem = null">×</button>
         </div>
         <div class="dialog-body">
-          <h4>事實</h4>
-          <p class="dialog-text">{{ previewItem.fact_text }}</p>
+          <h4>{{ previewField === 'syllabus' ? '主文' : '事實' }}</h4>
+          <p class="dialog-text">{{ previewField === 'syllabus' ? previewItem.syllabus : previewItem.fact_text }}</p>
         </div>
       </div>
     </div>
@@ -122,15 +125,18 @@ export default {
       total: 0,
       totalPages: 0,
       previewItem: null,
+      previewField: 'fact_text',
       summaryStats: [
         { label: '判決（篇數）', value: null },
         { label: '被告（人數）', value: null },
         { label: '犯罪數（筆數）', value: null },
         { label: '犯罪法條總數（條數）', value: null },
       ],
+      aggregations: {},
     }
   },
   async mounted() {
+    this.fetchFilteredStats();
     try {
       const resp = await axios.get('/api/stats/summary');
       const d = resp.data;
@@ -166,28 +172,17 @@ export default {
     async fetchFilteredStats() {
       try {
         const body = this.buildStatsBody();
-        const hasFilter = Object.keys(body).length > 0;
-        if (!hasFilter) {
-          const resp = await axios.get('/api/stats/summary');
-          const d = resp.data;
-          this.summaryStats = [
-            { label: '判決（篇數）', value: d.judgments },
-            { label: '被告（人數）', value: d.defendants },
-            { label: '犯罪數（筆數）', value: d.crimes },
-            { label: '犯罪法條總數（條數）', value: d.unique_laws },
-          ];
-        } else {
-          body.page = 1;
-          body.size = 1;
-          const resp = await axios.post('/api/stats/query', body);
-          const agg = resp.data.aggregations || {};
-          this.summaryStats = [
-            { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
-            { label: '被告（人數）', value: resp.data.meta?.total || 0 },
-            { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
-            { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
-          ];
-        }
+        body.page = 1;
+        body.size = 1;
+        const resp = await axios.post('/api/stats/query', body);
+        const agg = resp.data.aggregations || {};
+        this.aggregations = agg;
+        this.summaryStats = [
+          { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
+          { label: '被告（人數）', value: resp.data.meta?.total || 0 },
+          { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
+          { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
+        ];
       } catch { /* stats not available */ }
     },
     async doSearch() {
@@ -255,8 +250,17 @@ export default {
       if (!text) return '';
       return text.length > len ? text.slice(0, len) + '...' : text;
     },
-    openPreview(item) {
+    extractJid(item) {
+      if (item.JID) return item.JID;
+      if (item.jud_url) {
+        const m = item.jud_url.match(/[?&]id=([^&]+)/);
+        if (m) return decodeURIComponent(m[1]);
+      }
+      return null;
+    },
+    openPreview(item, field = 'fact_text') {
       this.previewItem = item;
+      this.previewField = field;
     },
     downloadCSV() {
       const header = '序號,案號,日期,案件別,主文,事實\n';

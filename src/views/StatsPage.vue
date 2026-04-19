@@ -1,7 +1,7 @@
 <template>
   <div class="stats-page">
     <div class="stats-layout">
-      <FilterSidebar v-model="filters" @submit="doQuery" @reset="resetFilters" />
+      <FilterSidebar v-model="filters" :aggregations="aggregations" @submit="doQuery" @reset="resetFilters" />
 
       <div class="stats-main">
         <div class="stats-header">
@@ -309,7 +309,7 @@ export default {
     },
     boxTicks() { return this.violinTicks; },
   },
-  mounted() { this.fetchSummary(); },
+  mounted() { this.fetchSummary(); this.doQuery(); },
   methods: {
     niceStep(max, target) {
       const raw = max / target;
@@ -352,6 +352,11 @@ export default {
         if (this.filters.closingType?.length) body.end_type = this.filters.closingType;
         if (this.filters.dateFrom) body.end_yr_from = parseInt(this.filters.dateFrom);
         if (this.filters.dateTo) body.end_yr_to = parseInt(this.filters.dateTo);
+        if (this.filters.defense?.length) body.defense = this.filters.defense;
+        if (this.filters.procedure?.length) body.proc_type = this.filters.procedure;
+        if (this.filters.probation?.length) body.prob_granted = this.filters.probation;
+        if (this.filters.recidivism?.length) body.recidivist = this.filters.recidivism;
+        if (this.filters.crimeArticle?.length) body.conv_law = this.filters.crimeArticle;
         const resp = await axios.post('/api/stats/query', body);
         this.tableData = resp.data.data || [];
         this.total = resp.data.meta?.total || 0;

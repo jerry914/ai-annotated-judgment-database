@@ -107,28 +107,32 @@ export default {
   components: { FilterAccordion },
   props: {
     modelValue: { type: Object, default: () => ({}) },
+    aggregations: { type: Object, default: () => ({}) },
   },
   emits: ['update:modelValue', 'submit', 'reset'],
   data() {
     return {
-      caseCategories: ['一人一罪', '一人多罪', '多人多罪', '多人一罪', '無罪名資料'],
-      courtTypes: ['臺灣臺北地方法院', '臺灣新北地方法院', '臺灣桃園地方法院', '臺灣臺中地方法院', '臺灣高雄地方法院'],
-      closingTypes: ['原判全部撤銷', '駁回', '一部自為判決', '不含法裁回', '原判全部撤銷一部自為判決'],
       yearOptions: Array.from({ length: 15 }, (_, i) => 107 + i),
-      defendantFilters: [
-        { key: 'defense', label: '辯護及代理', options: ['有辯護人', '無辯護人', '法扶律師'] },
-        { key: 'procedure', label: '裁判程序', options: ['通常程序', '簡式審判', '簡易程序', '協商程序'] },
-        { key: 'probation', label: '宣告緩刑', options: ['有', '無'] },
-        { key: 'recidivism', label: '累犯', options: ['有', '無'] },
-      ],
-      crimeFilters: [
-        { key: 'crimeArticle', label: '定罪法條', options: ['刑法§185-3', '毒品危害防制條例§10:2', '刑法§339-4:1', '刑法§339:1', '刑法§320:1', '刑法§321:1'] },
-        { key: 'aggravation', label: '量刑加重', options: ['有', '無'] },
-        { key: 'mitigation', label: '量刑減輕', options: ['有', '無'] },
-      ],
     }
   },
   computed: {
+    caseCategories() { return this.bucketsToKeys('by_case_type'); },
+    courtTypes() { return this.bucketsToKeys('by_court_type'); },
+    closingTypes() { return this.bucketsToKeys('by_end_type'); },
+    defendantFilters() {
+      return [
+        { key: 'defense', label: '辯護及代理', options: this.bucketsToKeys('by_defense') },
+        { key: 'procedure', label: '裁判程序', options: this.bucketsToKeys('by_procedure') },
+        { key: 'probation', label: '宣告緩刑', options: this.bucketsToKeys('by_probation') },
+        { key: 'recidivism', label: '累犯', options: this.bucketsToKeys('by_recidivism') },
+      ];
+    },
+    crimeFilters() {
+      return [
+        { key: 'crimeArticle', label: '定罪法條', options: this.bucketsToKeys('by_conv_law') },
+        { key: 'verdictResult', label: '罪名裁判結果', options: this.bucketsToKeys('by_verdict_result') },
+      ];
+    },
     filters: {
       get() {
         return {
@@ -153,6 +157,10 @@ export default {
     },
   },
   methods: {
+    bucketsToKeys(aggName) {
+      const buckets = this.aggregations?.[aggName]?.buckets;
+      return buckets ? buckets.map(b => b.key) : [];
+    },
     toggleFilter(key, value) {
       const arr = [...(this.filters[key] || [])];
       const idx = arr.indexOf(value);
