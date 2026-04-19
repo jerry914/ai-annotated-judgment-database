@@ -1,72 +1,59 @@
 <template>
   <footer class="footer">
-    <div class="container">
-      <span>
+    <div class="footer-inner">
+      <span class="footer-contact">
         <div>聯絡我們：aifr.general@gmail.com</div>
         <div>意見回饋：<a href="https://shorturl.at/W9rDw" target="_blank">https://shorturl.at/W9rDw</a></div>
       </span>
-      
-      <span style="max-width: 550px;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</span>
-      <div class="icon-container">
-        <img src="@/assets/logo_nthu.png" width="200" height="40" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
-        <img src="@/assets/icon.png" width="80" height="45" class="d-inline-block align-top" style="margin: 0 5px" alt="" loading="lazy" />
+      <span class="footer-copy">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</span>
+      <div class="footer-logos">
+        <img src="@/assets/logo_nthu.png" width="200" height="40" alt="" loading="lazy" />
+        <img src="@/assets/icon.png" width="80" height="45" alt="" loading="lazy" />
       </div>
     </div>
   </footer>
 </template>
 <script>
-export default {
-  name: 'my-footer',
-  data() {
-    return {
-      backend: [],
-      isLoading: false,
-      errorPrompt: false,
-      errorCode: '',
-    };
-  },
-  props: {
-  },
-  methods: {
-
-  },
-};
+export default { name: 'my-footer' }
 </script>
 <style scoped>
 .footer {
-  margin-top: 20px;
+  margin-top: var(--spacing-section);
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  padding: 10px;
-  background-color: #f5f5f5;
-  z-index: 1000; 
+  padding: 1.5rem 2rem;
+  background: var(--color-surface);
+  border-top: 1px solid rgba(0,0,0,0.06);
 }
-
-.container {
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  width: 100%;
+  gap: 1rem;
 }
-
-.container > span, .container > div {
-  margin: 5px 20px;
-  vertical-align: middle;
-  /* max-width: 0px; */
+.footer-contact {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--color-muted);
 }
-
-.d-inline-block {
-  display: inline-block;
+.footer-contact a {
+  color: var(--color-accent-alt);
+  text-decoration: none;
 }
-
-.align-top {
-  vertical-align: top;
+.footer-contact a:hover { text-decoration: underline; }
+.footer-copy {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  max-width: 550px;
 }
-.icon-container {
+.footer-logos {
   display: flex;
-  justify-content: space-around;
+  align-items: center;
+  gap: 0.75rem;
+}
+@media (max-width: 768px) {
+  .footer-inner { flex-direction: column; text-align: center; }
 }
 </style>
