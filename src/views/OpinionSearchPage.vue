@@ -10,11 +10,11 @@
         <div class="advanced-section">
           <div class="adv-field">
             <label class="adv-label">當事人等基本資料</label>
-            <input v-model="advFilters.basicInfo" class="adv-input" />
+            <input v-model="advFilters.basicInfo" class="adv-input" placeholder="輸入被告姓名、辯護人等..." />
           </div>
           <div class="adv-field">
             <label class="adv-label">主文中的關鍵字</label>
-            <input v-model="advFilters.syllabusKeyword" class="adv-input" />
+            <input v-model="advFilters.syllabusKeyword" class="adv-input" placeholder="輸入主文關鍵字..." />
           </div>
           <div class="adv-field">
             <label class="adv-label">見解關鍵字</label>
@@ -164,15 +164,19 @@ export default {
     async doSearch() {
       this.loading = true;
       this.searched = true;
-      this.fetchFilteredStats();
+      const hasKeyword = this.advFilters.basicInfo || this.advFilters.syllabusKeyword || this.advFilters.opinionKeyword;
+      if (!hasKeyword) this.fetchFilteredStats();
       try {
         const params = { page: this.page, size: this.pageSize };
         if (this.advFilters.basicInfo) params.basic_info = this.advFilters.basicInfo;
         if (this.advFilters.syllabusKeyword) params.syllabus = this.advFilters.syllabusKeyword;
         if (this.advFilters.opinionKeyword) params.prediction = this.advFilters.opinionKeyword;
         if (this.filters.courtType?.length) params.court_type = this.filters.courtType.join(' ');
-        if (this.filters.dateFrom && this.filters.dateTo) {
-          params.jud_date = `${this.filters.dateFrom}0101-${this.filters.dateTo}1231`;
+        if (this.filters.caseCategory?.length) params.case_type = this.filters.caseCategory.join(' ');
+        if (this.filters.dateFrom || this.filters.dateTo) {
+          const from = this.filters.dateFrom || '107';
+          const to = this.filters.dateTo || '121';
+          params.jud_date = `${from}0101-${to}1231`;
         }
         const resp = await axios.get('/api/criminal/opinion', { params });
         const data = resp.data;
@@ -188,6 +192,9 @@ export default {
         } else {
           this.results = [];
           this.total = 0;
+        }
+        if (hasKeyword && this.results.length) {
+          this.fetchStatsByJids(this.results);
         }
       } catch (e) {
         console.error('Search failed:', e);
@@ -209,6 +216,22 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    async fetchStatsByJids(results) {
+      const jids = [...new Set(results.map(r => this.extractJid(r)).filter(Boolean))];
+      if (!jids.length) return;
+      try {
+        const body = { ...this.buildStatsBody(), jid_filter: jids, page: 1, size: 1 };
+        const resp = await axios.post('/api/stats/query', body);
+        const agg = resp.data.aggregations || {};
+        this.aggregations = agg;
+        this.summaryStats = [
+          { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
+          { label: '被告（人數）', value: resp.data.meta?.total || 0 },
+          { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
+          { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
+        ];
+      } catch { /* stats not available */ }
     },
     resetFilters() {
       this.filters = {};

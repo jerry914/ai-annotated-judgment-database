@@ -148,7 +148,7 @@ export default {
   props: { jid: { type: String, default: '' } },
   data() {
     return {
-      searchQuery: '', judgment: null, stats: [], fulltext: '',
+      searchQuery: 'HLDM,107,訴,286,20200122,2', judgment: null, stats: [], fulltext: '',
       loading: false, error: '',
       highlights: [], nextHlId: 1, activeHlId: null,
       pendingSel: null,
