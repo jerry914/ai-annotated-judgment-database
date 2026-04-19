@@ -10,5 +10,10 @@ import '@vuepic/vue-datepicker/dist/main.css'
 
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import axios from 'axios'
+
+if (process.env.NODE_ENV === 'production') {
+  axios.defaults.baseURL = 'https://hssai-verdictdb.phys.nthu.edu.tw'
+}
 
 createApp(App).use(store).use(router).use(ElementPlus).component('VueDatePicker', VueDatePicker).mount('#app')
