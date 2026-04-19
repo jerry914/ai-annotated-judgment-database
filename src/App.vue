@@ -1,195 +1,148 @@
 <template>
   <div class="main-container">
-    <div class="notification-bar">
-      本系統AI助手的功能正在進行更新與硬體升級，暫時無法運作，還請見諒。
-    </div>
     <div class="jump-bar" :style="backgroundStyle"></div>
-    <div class="menu-bar">
-      <ul class="menu">
-        <li class="tab" :class="$route.path=='/'?'active tab':''"><router-link to="/">首頁與AI助手</router-link></li>
-        <li class="tab" :class="$route.path=='/search'?'active':''"><router-link to="/search">檢索平台</router-link></li>
-        <li class="tab" :class="$route.path=='/about'?'active':''"><router-link to="/about">
-          <template v-if="windowWidth < 400">
-            使用說明
-          </template>
-          <template v-else>使用說明與技術簡介</template>
-        </router-link></li>
-        <li class="tab" :class="$route.path=='/members'?'active':''"><router-link to="/members">開發團隊</router-link></li>
+    <nav class="nav-bar">
+      <ul class="nav-menu">
+        <li v-for="tab in tabs" :key="tab.path" class="nav-tab" :class="{ active: isActive(tab.path) }">
+          <router-link :to="tab.path">{{ tab.label }}</router-link>
+        </li>
       </ul>
-    </div>
+    </nav>
 
     <router-view/>
   </div>
   <my-footer></my-footer>
-  <!-- <div class="mt-2 text-center" style="z-index:-1;">©copyright Artificial Intelligence for Fundamental Research (AIFR) Group</div> -->
 </template>
 
 <script>
 import myFooter from './components/footer';
 export default {
-  components: {
-    myFooter
-  },
+  components: { myFooter },
   data() {
     return {
-      page_name: "搜尋頁面",
-      windowWidth: window.innerWidth
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      window.addEventListener('resize', this.onResize);
-    })
-  },
-  beforeUnmount() { 
-    window.removeEventListener('resize', this.onResize); 
-  },
-  computed: {
-    backgroundStyle() {
-      // const imagePath = require('@/assets/裁判觀點檢索平台.png');
-      // const imagePath = require('@/assets/裁判觀點檢索平台2.png');
-      const imagePath = require('@/assets/banner.png');
-      return {
-        backgroundImage: `url(${imagePath})`
-      };
+      tabs: [
+        { path: '/', label: '首頁' },
+        { path: '/stats', label: '判決資料統計' },
+        { path: '/fact-search', label: '事實檢索' },
+        { path: '/opinion-search', label: '見解檢索' },
+        { path: '/judgment', label: '裁判書筆記' },
+        { path: '/discussion', label: 'AI助手' },
+        { path: '/search', label: '檢索平台' },
+        { path: '/about', label: '使用說明' },
+        { path: '/members', label: '開發團隊' },
+      ],
     }
   },
   methods: {
-    onResize() {
-      this.windowWidth = window.innerWidth
+    isActive(path) {
+      if (path === '/') return this.$route.path === '/';
+      return this.$route.path.startsWith(path);
     }
-  } 
+  },
+  computed: {
+    backgroundStyle() {
+      const imagePath = require('@/assets/banner.png');
+      return { backgroundImage: `url(${imagePath})` };
+    }
+  },
 }
 </script>
+
 <style>
 body {
-  background-color: #ffffff !important;
+  background-color: var(--color-background) !important;
+  margin: 0;
 }
 #app {
-  font-family: "Noto Sans TC", sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #0b0b0b;
-}
-.page-title {
-  text-align: center;
-  margin: 30px;
-}
-.intro-title {
-  font-size: 1.75rem;
-  font-weight: 500;
-  line-height: 2rem;
-  margin: 40px 0 20px 0;
-}
-nav {
-  margin: 25px;
-  padding: 10px;
-  cursor: default;
-  background-color: #ffcd29;
-  border: 1px #cca421 solid;
-  border-radius: 8px;
-}
-
-nav a {
-  font-weight: bold;
-}
-.page-container {
-  margin: 20px 0 40px 0;
-}
-.back-btn {
-  float: left;
-  border: #b6a3cc 1px solid;
-  background-color: #e4ccff;
-  padding: 10px 20px;
-  transform: translate(-13px, -11px);
-  border-radius: 8px;
-}
-.back-btn a {
-  text-decoration: none !important;
-  color: #000;
-  font-weight: 400 !important;
+  color: var(--color-primary);
 }
 .main-container {
-  min-height: calc( 100vh - 100px );
-}
-.notification-bar {
-  background-color: #ffcdd9;
-  border-bottom: 1px solid #ea688d;
-  color: #9c0000;
-  padding: 12px 20px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  width: 100%;
-  box-sizing: border-box;
+  min-height: calc(100vh - 80px);
 }
 .jump-bar {
-  height: 120px;
+  height: 100px;
   background-color: #000;
   background-size: 960px 140px;
   background-position: 50% -20px;
   background-repeat: no-repeat;
 }
-
 @media (max-width: 920px) {
   .jump-bar {
     background-size: contain;
     background-position: center;
-    height: 80px;
+    height: 64px;
   }
 }
 
-.menu-bar {
-  background-color: #e9eef7; /* Light blue background */
+/* ── Editorial Navigation ── */
+.nav-bar {
+  background-color: #000;
   display: flex;
-  justify-content: center; /* Center menu items horizontally */
-  padding: 10px 0; /* Padding on top and bottom */
+  justify-content: center;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-
-.menu {
-  list-style-type: none;
+.nav-menu {
+  list-style: none;
   display: flex;
   margin: 0;
   padding: 0;
-  width: 580px;
+  max-width: 960px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
 }
-
-.menu .tab {
-  flex-grow: 1;
-  text-align: center;
+.nav-tab {
+  flex-shrink: 0;
 }
-
-.menu .tab a {
+.nav-tab a {
   display: block;
-  padding: 5px 20px;
+  padding: 12px 18px;
   text-decoration: none;
-  color: #333;
-  background-color: #e9eef7;
-  border-radius: 5px; /* Optional: rounded corners */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
-  text-decoration: none !important;
-  width: fit-content;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color var(--duration-fade) var(--ease-editorial);
+  border-bottom: 2px solid transparent;
 }
-
-.menu .tab a:hover {
-  background-color: #d1d8e8; /* Lighter blue on hover */
+.nav-tab a:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
-
-.active a {
-  background-color: #cad2e0 !important; /* Active tab color */
+.nav-tab.active a {
+  color: #fff;
+  border-bottom-color: #fff;
 }
-
-/* RWD: Stacking tabs for smaller screens */
 @media (max-width: 768px) {
-  .menu .tab {
-    flex-basis: 100%; /* Each tab takes full width */
-    margin-bottom: 5px; /* Add space between stacked tabs */
-    width: 100%;
+  .nav-menu {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .menu .tab a {
-    padding: 5px 10px;
-    width: 100%;
+  .nav-tab a {
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: nowrap;
   }
 }
 
+/* ── Page-level defaults ── */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+}
 </style>

@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/ChatView.vue'
+import HomePage from '../views/HomePage.vue'
+import StatsPage from '../views/StatsPage.vue'
+import FactSearchPage from '../views/FactSearchPage.vue'
+import OpinionSearchPage from '../views/OpinionSearchPage.vue'
+import JudgmentPage from '../views/JudgmentPage.vue'
+import ChatView from '../views/ChatView.vue'
 import SearchView from '../views/SearchView.vue'
 import SearchResult from '../views/SearchResult.vue'
 import AboutPage from '../views/AboutPage.vue'
@@ -9,7 +14,38 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: HomePage
+  },
+  {
+    path: '/stats',
+    name: 'stats',
+    component: StatsPage
+  },
+  {
+    path: '/fact-search',
+    name: 'fact-search',
+    component: FactSearchPage
+  },
+  {
+    path: '/opinion-search',
+    name: 'opinion-search',
+    component: OpinionSearchPage
+  },
+  {
+    path: '/judgment',
+    name: 'judgment-landing',
+    component: JudgmentPage
+  },
+  {
+    path: '/judgment/:jid',
+    name: 'judgment',
+    component: JudgmentPage,
+    props: true
+  },
+  {
+    path: '/discussion',
+    name: 'discussion',
+    component: ChatView
   },
   {
     path: '/search',
