@@ -62,8 +62,8 @@
                   <a v-if="item.syllabus && item.syllabus.length > 80" href="#" class="read-more" @click.prevent="openPreview(item, 'syllabus')">閱讀全文</a>
                 </td>
                 <td class="cell-text">
-                  {{ truncate(item.fact_text, 100) }}
-                  <a v-if="item.fact_text && item.fact_text.length > 100" href="#" class="read-more" @click.prevent="openPreview(item)">閱讀全文</a>
+                  {{ truncate(item.fee || item.fact_text, 100) }}
+                  <a v-if="(item.fee || item.fact_text || '').length > 100" href="#" class="read-more" @click.prevent="openPreview(item, item.fee ? 'fee' : 'fact_text')">閱讀全文</a>
                 </td>
               </tr>
             </tbody>
@@ -98,7 +98,7 @@
         </div>
         <div class="dialog-body">
           <h4>{{ previewField === 'syllabus' ? '主文' : '事實' }}</h4>
-          <p class="dialog-text">{{ previewField === 'syllabus' ? previewItem.syllabus : previewItem.fact_text }}</p>
+          <p class="dialog-text">{{ previewItem[previewField] }}</p>
         </div>
       </div>
     </div>
@@ -305,7 +305,7 @@ export default {
     downloadCSV() {
       const header = '序號,案號,日期,案件別,主文,事實\n';
       const rows = this.results.map((r, i) =>
-        [i + 1, `"${r.case_num || ''}"`, r.jud_date, `"${r.case_type || ''}"`, `"${(r.syllabus || '').replace(/"/g, '""')}"`, `"${(r.fact_text || '').replace(/"/g, '""')}"`].join(',')
+        [i + 1, `"${r.case_num || ''}"`, r.jud_date, `"${r.case_type || ''}"`, `"${(r.syllabus || '').replace(/"/g, '""')}"`, `"${(r.fee || r.fact_text || '').replace(/"/g, '""')}"`].join(',')
       ).join('\n');
       const blob = new Blob(['\ufeff' + header + rows], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);

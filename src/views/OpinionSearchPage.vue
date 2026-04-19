@@ -88,7 +88,7 @@
         </div>
         <div class="dialog-body">
           <h4>{{ previewField === 'syllabus' ? '主文' : '見解' }}</h4>
-          <p class="dialog-text">{{ previewField === 'syllabus' ? previewItem.syllabus : (previewItem.opinion || previewItem.sentence) }}</p>
+          <p class="dialog-text">{{ previewItem[previewField] || previewItem.sentence }}</p>
         </div>
       </div>
     </div>
