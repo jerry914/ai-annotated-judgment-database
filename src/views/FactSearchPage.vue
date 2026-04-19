@@ -246,15 +246,32 @@ export default {
       try {
         const body = { ...this.buildStatsBody(), jid_filter: jids, page: 1, size: 1 };
         const resp = await axios.post('/api/stats/query', body);
-        const agg = resp.data.aggregations || {};
-        this.aggregations = agg;
+        const matched = resp.data.meta?.total || 0;
+        if (matched > 0) {
+          const agg = resp.data.aggregations || {};
+          this.aggregations = agg;
+          this.summaryStats = [
+            { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
+            { label: '被告（人數）', value: matched },
+            { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
+            { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
+          ];
+        } else {
+          this.summaryStats = [
+            { label: '搜尋結果', value: this.total },
+            { label: '涵蓋判決', value: jids.length },
+            { label: '犯罪數（筆數）', value: '-' },
+            { label: '犯罪法條總數（條數）', value: '-' },
+          ];
+        }
+      } catch {
         this.summaryStats = [
-          { label: '判決（篇數）', value: agg.unique_jid?.value || 0 },
-          { label: '被告（人數）', value: resp.data.meta?.total || 0 },
-          { label: '犯罪數（筆數）', value: agg.total_crimes?.value || 0 },
-          { label: '犯罪法條總數（條數）', value: agg.unique_laws?.value || 0 },
+          { label: '搜尋結果', value: this.total },
+          { label: '涵蓋判決', value: jids.length },
+          { label: '犯罪數（筆數）', value: '-' },
+          { label: '犯罪法條總數（條數）', value: '-' },
         ];
-      } catch { /* stats not available */ }
+      }
     },
     resetFilters() {
       this.filters = {};
