@@ -1,6 +1,6 @@
 const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
-  // publicPath: process.env.NODE_ENV === "production" ? "/ai-annotated-judgment-database/" : "/",
+  publicPath: process.env.NODE_ENV === "production" ? "/ai-annotated-judgment-database/" : "/",
   transpileDependencies: true,
   devServer: {
     proxy: {
